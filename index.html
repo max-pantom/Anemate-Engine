@@ -170,8 +170,25 @@
 
       <div class="h-40 bg-zinc-900 border-t border-zinc-800 px-4 py-2">
         <div class="text-xs text-zinc-400 mb-2">Timeline</div>
-        <div class="w-full h-[6px] bg-zinc-800 rounded mb-4"></div>
-        <div class="text-xs text-zinc-500">Keyframes editor placeholder</div>
+        <div class="w-full h-[6px] bg-zinc-800 rounded mb-2"></div>
+        <div
+          id="keyframe-panel"
+          class="flex items-center space-x-2 overflow-x-auto mb-2 h-6"
+        ></div>
+        <div class="flex space-x-2 text-xs">
+          <button
+            id="play-timeline"
+            class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-1 rounded"
+          >
+            Play
+          </button>
+          <button
+            id="stop-timeline"
+            class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-1 rounded"
+          >
+            Stop
+          </button>
+        </div>
       </div>
     </div>
 
@@ -272,11 +289,15 @@
     let panStart = { x: 0, y: 0 };
     let panOffset = { x: 0, y: 0 };
     const maxScale = 3;
+    let groupIdCounter = 0; // unique id for <g> wrappers
 
     const canvasContainer = document.getElementById("canvas-container");
     const canvas = document.getElementById("canvas");
     const layerPanel = document.getElementById("layer-panel");
     const importButton = document.getElementById("import-button");
+    const keyframePanel = document.getElementById("keyframe-panel");
+    const playTimelineBtn = document.getElementById("play-timeline");
+    const stopTimelineBtn = document.getElementById("stop-timeline");
     const shapeButtons = document.querySelectorAll("[data-shape]");
     const addKeyframeBtn = document.getElementById("add-keyframe");
     const prevKeyframeBtn = document.getElementById("prev-keyframe");
@@ -319,6 +340,12 @@
     stopBtn.addEventListener("click", () => {
       isPlaying = false;
     });
+    if (playTimelineBtn)
+      playTimelineBtn.addEventListener("click", playKeyframes);
+    if (stopTimelineBtn)
+      stopTimelineBtn.addEventListener("click", () => {
+        isPlaying = false;
+      });
     // Initialize "Select"
     document.querySelector('[data-shape="select"]').classList.add("bg-zinc-700");
 
@@ -340,6 +367,21 @@
       if (e.altKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
         createKeyframe();
+      }
+      // Arrow key movement for selected element
+      const selected = document.querySelector("g.selected");
+      if (selected && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        let x = parseFloat(selected.getAttribute("data-x") || 0);
+        let y = parseFloat(selected.getAttribute("data-y") || 0);
+        if (e.key === "ArrowUp") y -= step;
+        if (e.key === "ArrowDown") y += step;
+        if (e.key === "ArrowLeft") x -= step;
+        if (e.key === "ArrowRight") x += step;
+        selected.setAttribute("data-x", x);
+        selected.setAttribute("data-y", y);
+        selected.style.transform = `translate(${x}px, ${y}px)`;
       }
     });
 
@@ -387,6 +429,7 @@
       );
       wrapper.classList.add("frame-item"); // Add class for frame differentiation
       wrapper.setAttribute("data-type", "Frame"); // Set data-type for identification
+      wrapper.dataset.id = groupIdCounter++;
       wrapper.appendChild(frameRect);
 
       // By default, new frames go to the root <svg>
@@ -416,6 +459,9 @@
         };
         keyframes.push(position);
         currentKeyframeIndex++;
+        const marker = document.createElement("div");
+        marker.className = "w-3 h-3 bg-blue-500 rounded";
+        keyframePanel.appendChild(marker);
         console.log("Keyframe created:", position);
       }
     }
@@ -547,6 +593,7 @@
         "g"
       );
       wrapper.setAttribute("data-type", "SVG"); // Set data-type for identification
+      wrapper.dataset.id = groupIdCounter++;
       wrapper.appendChild(svgElem);
 
       // If the point is inside a Frame, append there; otherwise, root <svg>
@@ -634,6 +681,7 @@
         "data-type",
         type.charAt(0).toUpperCase() + type.slice(1)
       ); // Set data-type for identification
+      wrapper.dataset.id = groupIdCounter++;
       wrapper.appendChild(shape);
 
       // Nest inside frame if the point lies within one
@@ -919,42 +967,40 @@
     // LAYERS PANEL
     function updateLayerPanel() {
       layerPanel.innerHTML = "";
-      const groups = canvas.querySelectorAll("g");
-      groups.forEach((g, i) => {
+      function addItem(node, depth = 0) {
+        if (node.nodeName !== "g") return;
         const item = document.createElement("div");
-        const type = g.getAttribute("data-type") || "Layer";
+        const type = node.getAttribute("data-type") || "Layer";
+        const isFrame = type === "Frame";
         item.className =
           "layer-item p-1 hover:bg-zinc-700 cursor-pointer flex justify-between items-center";
-        // Display “Type N” (e.g. “Rectangle 3”, “Frame 1”, etc.)
-        const isFrame = g.getAttribute("data-type") === "Frame";
+        item.style.paddingLeft = `${depth * 12}px`;
+        item.dataset.gid = node.dataset.id;
         item.innerHTML = `
           <span class="${isFrame ? "frame-item" : ""}">
-            ${isFrame ? "📁 " : ""}${type} ${i + 1}
+            ${isFrame ? "📁 " : ""}${type}
           </span>
-          <button data-index="${i}" class="delete-btn text-xs text-red-400 hover:text-red-600">🗑️</button>
+          <button class="delete-btn text-xs text-red-400 hover:text-red-600">🗑️</button>
         `;
-        // Clicking on layer item selects its group
         item.addEventListener("click", () => {
           if (currentTool !== "select") return;
-          groups[i].dispatchEvent(new Event("click"));
+          node.dispatchEvent(new Event("click"));
         });
-        // Delete button
         item.querySelector(".delete-btn").addEventListener("click", (ev) => {
           ev.stopPropagation();
-          groups[i].remove();
+          node.remove();
           updateLayerPanel();
         });
         layerPanel.appendChild(item);
-      });
+        Array.from(node.children).forEach((child) => addItem(child, depth + 1));
+      }
+      Array.from(canvas.children).forEach((child) => addItem(child, 0));
     }
 
     function highlightLayerItem(wrapper) {
       const items = layerPanel.querySelectorAll(".layer-item");
-      items.forEach((it, idx) => {
-        it.classList.toggle(
-          "bg-blue-600",
-          Array.from(canvas.children)[idx] === wrapper
-        );
+      items.forEach((it) => {
+        it.classList.toggle("bg-blue-600", it.dataset.gid == wrapper.dataset.id);
       });
     }
 

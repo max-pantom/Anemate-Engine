@@ -722,7 +722,6 @@
       // Unified click handler on the <g> itself
       const selectHandler = (e) => {
         e.stopPropagation();
-        if (currentTool !== "select") return;
 
         // Deselect any previously selected group
         document.querySelectorAll("g.selected").forEach((g) => {
@@ -756,7 +755,6 @@
       let isDragging = false;
       let startX, startY;
       wrapper.addEventListener("mousedown", (e) => {
-        if (currentTool !== "select") return;
         isDragging = true;
         startX = e.clientX;
         startY = e.clientY;
@@ -983,7 +981,6 @@
           <button class="delete-btn text-xs text-red-400 hover:text-red-600">🗑️</button>
         `;
         item.addEventListener("click", () => {
-          if (currentTool !== "select") return;
           node.dispatchEvent(new Event("click"));
         });
         item.querySelector(".delete-btn").addEventListener("click", (ev) => {
@@ -1006,7 +1003,6 @@
 
     // DESELECT ON BACKGROUND CLICK
     canvas.addEventListener("click", (e) => {
-      if (currentTool !== "select") return;
       document
         .querySelectorAll("g.selected")
         .forEach((g) => {

@@ -40,6 +40,15 @@
     .rotate-handle {
       pointer-events: none;
     }
+
+    /* Marker style for keyframes in the timeline */
+    .keyframe-marker {
+      width: 6px;
+      height: 16px;
+      background-color: #3b82f6;
+      border-radius: 1px;
+      margin-right: 4px;
+    }
   </style>
 </head>
 <body class="bg-zinc-950 text-white font-sans">
@@ -281,8 +290,8 @@
   <script>
     // STATE & UTILITY
     let currentTool = "select";
-    let keyframes = []; // Store keyframes
-    let currentKeyframeIndex = -1; // Track current keyframe
+    const keyframes = {}; // Store keyframes per element id
+    let currentKeyframeIndex = -1; // Track current keyframe for selected
     let isPlaying = false; // Track playback state
     let scaleVal = 1;
     let isPanning = false;
@@ -304,7 +313,17 @@
     const nextKeyframeBtn = document.getElementById("next-keyframe");
     const deleteKeyframeBtn = document.getElementById("delete-keyframe");
     const playBtn = document.getElementById("play-keyframes");
-    const stopBtn = document.getElementById("stop-keyframes");
+  const stopBtn = document.getElementById("stop-keyframes");
+
+    function updateKeyframeUI(id) {
+      keyframePanel.innerHTML = "";
+      const frames = keyframes[id] || [];
+      frames.forEach(() => {
+        const mark = document.createElement("div");
+        mark.className = "keyframe-marker inline-block";
+        keyframePanel.appendChild(mark);
+      });
+    }
 
     // TOOLS: Set Active Tool
     shapeButtons.forEach((btn) => {
@@ -315,27 +334,35 @@
       });
     });
     addKeyframeBtn.addEventListener("click", createKeyframe);
-    prevKeyframeBtn.addEventListener("click", () => {
-      if (currentKeyframeIndex > 0) {
-        currentKeyframeIndex--;
-        applyKeyframe(currentKeyframeIndex);
-      }
-    });
-    nextKeyframeBtn.addEventListener("click", () => {
-      if (currentKeyframeIndex < keyframes.length - 1) {
-        currentKeyframeIndex++;
-        applyKeyframe(currentKeyframeIndex);
-      }
-    });
-    deleteKeyframeBtn.addEventListener("click", () => {
-      if (currentKeyframeIndex >= 0) {
-        keyframes.splice(currentKeyframeIndex, 1);
-        currentKeyframeIndex = Math.min(
-          currentKeyframeIndex,
-          keyframes.length - 1
-        );
-      }
-    });
+      prevKeyframeBtn.addEventListener("click", () => {
+        const sel = document.querySelector("g.selected");
+        if (!sel) return;
+        const frames = keyframes[sel.dataset.id] || [];
+        if (currentKeyframeIndex > 0) {
+          currentKeyframeIndex--;
+          applyKeyframe(currentKeyframeIndex);
+        }
+      });
+      nextKeyframeBtn.addEventListener("click", () => {
+        const sel = document.querySelector("g.selected");
+        if (!sel) return;
+        const frames = keyframes[sel.dataset.id] || [];
+        if (currentKeyframeIndex < frames.length - 1) {
+          currentKeyframeIndex++;
+          applyKeyframe(currentKeyframeIndex);
+        }
+      });
+      deleteKeyframeBtn.addEventListener("click", () => {
+        const sel = document.querySelector("g.selected");
+        if (!sel) return;
+        const frames = keyframes[sel.dataset.id] || [];
+        if (currentKeyframeIndex >= 0) {
+          frames.splice(currentKeyframeIndex, 1);
+          keyframes[sel.dataset.id] = frames;
+          currentKeyframeIndex = Math.min(currentKeyframeIndex, frames.length - 1);
+          updateKeyframeUI(sel.dataset.id);
+        }
+      });
     playBtn.addEventListener("click", playKeyframes);
     stopBtn.addEventListener("click", () => {
       isPlaying = false;
@@ -440,74 +467,70 @@
 
     function createKeyframe() {
       const selected = document.querySelector("g.selected");
-      if (selected) {
-        const transform = selected.getAttribute("transform") || "";
-        const x = parseFloat(selected.getAttribute("data-x") || 0);
-        const y = parseFloat(selected.getAttribute("data-y") || 0);
-        const scaleMatch = transform.includes("scale(")
-          ? transform.match(/scale\(([^)]+)\)/)[1]
-          : 1;
-        const rotMatch = transform.includes("rotate(")
-          ? transform.match(/rotate\(([^,]+),/)[1]
-          : 0;
+      if (!selected) return;
+      const id = selected.dataset.id;
+      const transform = selected.getAttribute("transform") || "";
+      const x = parseFloat(selected.getAttribute("data-x") || 0);
+      const y = parseFloat(selected.getAttribute("data-y") || 0);
+      const scaleMatch = transform.includes("scale(")
+        ? transform.match(/scale\(([^)]+)\)/)[1]
+        : 1;
+      const rotMatch = transform.includes("rotate(")
+        ? transform.match(/rotate\(([^,]+),/)[1]
+        : 0;
 
-        const position = {
-          x: x,
-          y: y,
-          scale: parseFloat(scaleMatch),
-          rotation: parseFloat(rotMatch),
-        };
-        keyframes.push(position);
-        currentKeyframeIndex++;
-        const marker = document.createElement("div");
-        marker.className = "w-3 h-3 bg-blue-500 rounded";
-        keyframePanel.appendChild(marker);
-        console.log("Keyframe created:", position);
-      }
+      const frame = {
+        x,
+        y,
+        scale: parseFloat(scaleMatch),
+        rotation: parseFloat(rotMatch),
+      };
+      if (!keyframes[id]) keyframes[id] = [];
+      keyframes[id].push(frame);
+      currentKeyframeIndex = keyframes[id].length - 1;
+      updateKeyframeUI(id);
     }
 
     function applyKeyframe(index) {
-      const frame = keyframes[index];
       const selected = document.querySelector("g.selected");
-      if (selected && frame) {
-        selected.setAttribute("data-x", frame.x);
-        selected.setAttribute("data-y", frame.y);
-        selected.setAttribute(
-          "transform",
-          `translate(${frame.x}px, ${frame.y}px) scale(${frame.scale}) rotate(${frame.rotation})`
-        );
-      }
+      if (!selected) return;
+      const frames = keyframes[selected.dataset.id] || [];
+      const frame = frames[index];
+      if (!frame) return;
+      selected.setAttribute("data-x", frame.x);
+      selected.setAttribute("data-y", frame.y);
+      selected.setAttribute(
+        "transform",
+        `translate(${frame.x}px, ${frame.y}px) scale(${frame.scale}) rotate(${frame.rotation})`
+      );
     }
 
     // PLAYBACK FUNCTIONALITY
     function playKeyframes() {
-      if (isPlaying || keyframes.length === 0) return;
+      const selected = document.querySelector("g.selected");
+      if (!selected) return;
+      const frames = keyframes[selected.dataset.id];
+      if (isPlaying || !frames || frames.length === 0) return;
       isPlaying = true;
       let index = 0;
 
       const interval = setInterval(() => {
-        if (index >= keyframes.length) {
+        if (index >= frames.length) {
           clearInterval(interval);
           isPlaying = false;
           return;
         }
-        const keyframe = keyframes[index];
-        const selected = document.querySelector("g.selected");
-        if (selected) {
-          selected.setAttribute("data-x", keyframe.x);
-          selected.setAttribute("data-y", keyframe.y);
-          selected.setAttribute(
-            "transform",
-            `translate(${keyframe.x}px, ${keyframe.y}px) scale(${
-              keyframe.scale
-            }) rotate(${keyframe.rotation})`
-          );
-          updateTransform(); // Update the visual representation
-        }
+        const f = frames[index];
+        selected.setAttribute("data-x", f.x);
+        selected.setAttribute("data-y", f.y);
+        selected.setAttribute(
+          "transform",
+          `translate(${f.x}px, ${f.y}px) scale(${f.scale}) rotate(${f.rotation})`
+        );
+        updateTransform();
         index++;
-      }, 1000); // 1 second per keyframe
+      }, 1000);
     }
-
     // PAN & ZOOM
     canvasContainer.addEventListener("wheel", (e) => {
       e.preventDefault();
@@ -718,7 +741,7 @@
       .addEventListener("click", () => createShape("text", lastMousePosition));
 
     // SELECTION MODE
-    function makeSVGSelectable(wrapper) {
+      function makeSVGSelectable(wrapper) {
       // Unified click handler on the <g> itself
       const selectHandler = (e) => {
         e.stopPropagation();
@@ -741,6 +764,7 @@
 
         updatePropertiesPanel(wrapper);
         highlightLayerItem(wrapper);
+        updateKeyframeUI(wrapper.dataset.id);
       };
 
       wrapper.addEventListener("click", selectHandler);
@@ -751,14 +775,15 @@
     }
 
     // DRAGGING (select only)
-    function makeSVGDraggable(wrapper) {
-      let isDragging = false;
-      let startX, startY;
-      wrapper.addEventListener("mousedown", (e) => {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-      });
+      function makeSVGDraggable(wrapper) {
+        let isDragging = false;
+        let startX, startY;
+        wrapper.addEventListener("mousedown", (e) => {
+          if (!wrapper.classList.contains("selected")) return;
+          isDragging = true;
+          startX = e.clientX;
+          startY = e.clientY;
+        });
       wrapper.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
         const dx = (e.clientX - startX) / scaleVal;

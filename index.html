@@ -244,6 +244,20 @@
           </button>
         </div>
       </div>
+
+      <h2 class="text-sm font-bold uppercase mt-6 mb-2">Animate</h2>
+      <div id="animate-panel" class="space-y-2 text-xs">
+        <button id="add-keyframe" class="w-full bg-zinc-700 hover:bg-zinc-600 py-1 rounded">Add Keyframe</button>
+        <div class="flex space-x-2">
+          <button id="prev-keyframe" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-1 rounded">Prev</button>
+          <button id="next-keyframe" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-1 rounded">Next</button>
+        </div>
+        <button id="delete-keyframe" class="w-full bg-zinc-700 hover:bg-zinc-600 py-1 rounded">Delete Keyframe</button>
+        <div class="flex space-x-2">
+          <button id="play-keyframes" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-1 rounded">Play</button>
+          <button id="stop-keyframes" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-1 rounded">Stop</button>
+        </div>
+      </div>
     </aside>
   </div>
 
@@ -264,6 +278,12 @@
     const layerPanel = document.getElementById("layer-panel");
     const importButton = document.getElementById("import-button");
     const shapeButtons = document.querySelectorAll("[data-shape]");
+    const addKeyframeBtn = document.getElementById("add-keyframe");
+    const prevKeyframeBtn = document.getElementById("prev-keyframe");
+    const nextKeyframeBtn = document.getElementById("next-keyframe");
+    const deleteKeyframeBtn = document.getElementById("delete-keyframe");
+    const playBtn = document.getElementById("play-keyframes");
+    const stopBtn = document.getElementById("stop-keyframes");
 
     // TOOLS: Set Active Tool
     shapeButtons.forEach((btn) => {
@@ -272,6 +292,32 @@
         btn.classList.add("bg-zinc-700");
         currentTool = btn.getAttribute("data-shape");
       });
+    });
+    addKeyframeBtn.addEventListener("click", createKeyframe);
+    prevKeyframeBtn.addEventListener("click", () => {
+      if (currentKeyframeIndex > 0) {
+        currentKeyframeIndex--;
+        applyKeyframe(currentKeyframeIndex);
+      }
+    });
+    nextKeyframeBtn.addEventListener("click", () => {
+      if (currentKeyframeIndex < keyframes.length - 1) {
+        currentKeyframeIndex++;
+        applyKeyframe(currentKeyframeIndex);
+      }
+    });
+    deleteKeyframeBtn.addEventListener("click", () => {
+      if (currentKeyframeIndex >= 0) {
+        keyframes.splice(currentKeyframeIndex, 1);
+        currentKeyframeIndex = Math.min(
+          currentKeyframeIndex,
+          keyframes.length - 1
+        );
+      }
+    });
+    playBtn.addEventListener("click", playKeyframes);
+    stopBtn.addEventListener("click", () => {
+      isPlaying = false;
     });
     // Initialize "Select"
     document.querySelector('[data-shape="select"]').classList.add("bg-zinc-700");
@@ -371,6 +417,19 @@
         keyframes.push(position);
         currentKeyframeIndex++;
         console.log("Keyframe created:", position);
+      }
+    }
+
+    function applyKeyframe(index) {
+      const frame = keyframes[index];
+      const selected = document.querySelector("g.selected");
+      if (selected && frame) {
+        selected.setAttribute("data-x", frame.x);
+        selected.setAttribute("data-y", frame.y);
+        selected.setAttribute(
+          "transform",
+          `translate(${frame.x}px, ${frame.y}px) scale(${frame.scale}) rotate(${frame.rotation})`
+        );
       }
     }
 
@@ -668,6 +727,24 @@
       });
       ["mouseup", "mouseleave"].forEach((evt) =>
         wrapper.addEventListener(evt, () => {
+          if (isDragging) {
+            const bbox = wrapper.getBBox();
+            const cx =
+              bbox.x +
+              bbox.width / 2 +
+              parseFloat(wrapper.getAttribute("data-x") || 0);
+            const cy =
+              bbox.y +
+              bbox.height / 2 +
+              parseFloat(wrapper.getAttribute("data-y") || 0);
+            const parentFrame = findFrameAtPoint(cx, cy);
+            if (parentFrame && wrapper.parentNode !== parentFrame) {
+              parentFrame.appendChild(wrapper);
+            } else if (!parentFrame && wrapper.parentNode !== canvas) {
+              canvas.appendChild(wrapper);
+            }
+            updateLayerPanel();
+          }
           isDragging = false;
         })
       );
@@ -849,10 +926,11 @@
         item.className =
           "layer-item p-1 hover:bg-zinc-700 cursor-pointer flex justify-between items-center";
         // Display “Type N” (e.g. “Rectangle 3”, “Frame 1”, etc.)
+        const isFrame = g.getAttribute("data-type") === "Frame";
         item.innerHTML = `
-          <span class="${
-            g.classList.contains("frame-item") ? "frame-item" : ""
-          }">${type} ${i + 1}</span>
+          <span class="${isFrame ? "frame-item" : ""}">
+            ${isFrame ? "📁 " : ""}${type} ${i + 1}
+          </span>
           <button data-index="${i}" class="delete-btn text-xs text-red-400 hover:text-red-600">🗑️</button>
         `;
         // Clicking on layer item selects its group

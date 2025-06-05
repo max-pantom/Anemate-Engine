@@ -289,6 +289,23 @@
           </select>
           <button id="export-video" class="w-full bg-zinc-700 hover:bg-zinc-600 py-1 rounded">Export Video</button>
         </div>
+        <h3 class="text-xs font-bold mt-4">Transition</h3>
+        <div id="transition-panel" class="space-y-2">
+          <div>
+            <label class="block text-xs mb-1">Duration (ms)</label>
+            <input id="transition-time" type="number" value="1000" class="w-full rounded bg-zinc-800 border border-zinc-700 p-1" />
+          </div>
+          <div>
+            <label class="block text-xs mb-1">Easing</label>
+            <select id="transition-easing" class="w-full bg-zinc-700 p-1 rounded text-white">
+              <option value="linear">linear</option>
+              <option value="ease">ease</option>
+              <option value="ease-in">ease-in</option>
+              <option value="ease-out">ease-out</option>
+              <option value="ease-in-out">ease-in-out</option>
+            </select>
+          </div>
+        </div>
       </div>
     </aside>
   </div>
@@ -323,6 +340,16 @@
     const exportContainer = document.getElementById("export-container");
     const exportBtn = document.getElementById("export-video");
     const exportFormat = document.getElementById("export-format");
+    const transitionTimeInput = document.getElementById("transition-time");
+    const transitionEasingSelect = document.getElementById("transition-easing");
+    let transitionTime = parseInt(transitionTimeInput.value) || 1000;
+    let transitionEasing = transitionEasingSelect.value;
+    transitionTimeInput.oninput = () => {
+      transitionTime = parseInt(transitionTimeInput.value) || 1000;
+    };
+    transitionEasingSelect.onchange = () => {
+      transitionEasing = transitionEasingSelect.value;
+    };
 
     function updateKeyframeUI(id) {
       keyframePanel.innerHTML = "";
@@ -490,6 +517,7 @@
       const selected = document.querySelector("g.selected");
       if (!selected) return;
       const id = selected.dataset.id;
+      const child = selected.firstElementChild;
       const transform = selected.getAttribute("transform") || "";
       const x = parseFloat(selected.getAttribute("data-x") || 0);
       const y = parseFloat(selected.getAttribute("data-y") || 0);
@@ -499,12 +527,16 @@
       const rotMatch = transform.includes("rotate(")
         ? transform.match(/rotate\(([^,]+),/)[1]
         : 0;
+      const fill = child.getAttribute("fill") || "#ffffff";
+      const opacity = child.getAttribute("opacity") || 1;
 
       const frame = {
         x,
         y,
         scale: parseFloat(scaleMatch),
         rotation: parseFloat(rotMatch),
+        fill,
+        opacity: parseFloat(opacity),
       };
       if (!keyframes[id]) keyframes[id] = [];
       keyframes[id].push(frame);
@@ -524,6 +556,12 @@
         "transform",
         `translate(${frame.x}px, ${frame.y}px) scale(${frame.scale}) rotate(${frame.rotation})`
       );
+      const child = selected.firstElementChild;
+      if (child) {
+        child.setAttribute("fill", frame.fill);
+        child.setAttribute("opacity", frame.opacity);
+      }
+      updatePropertiesPanel(selected);
     }
 
     // PLAYBACK FUNCTIONALITY
@@ -533,24 +571,22 @@
       const frames = keyframes[selected.dataset.id];
       if (isPlaying || !frames || frames.length === 0) return;
       isPlaying = true;
+      const child = selected.firstElementChild;
+      selected.style.transition = `transform ${transitionTime}ms ${transitionEasing}`;
+      if (child) {
+        child.style.transition = `fill ${transitionTime}ms ${transitionEasing}, opacity ${transitionTime}ms ${transitionEasing}`;
+      }
       let index = 0;
 
       const interval = setInterval(() => {
-        if (index >= frames.length) {
+        if (!isPlaying || index >= frames.length) {
           clearInterval(interval);
           isPlaying = false;
           return;
         }
-        const f = frames[index];
-        selected.setAttribute("data-x", f.x);
-        selected.setAttribute("data-y", f.y);
-        selected.setAttribute(
-          "transform",
-          `translate(${f.x}px, ${f.y}px) scale(${f.scale}) rotate(${f.rotation})`
-        );
-        updateTransform();
+        applyKeyframe(index);
         index++;
-      }, 1000);
+      }, transitionTime);
     }
 
     function exportAnimation() {

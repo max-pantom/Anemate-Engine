@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SVG Animator Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Canvas grid background and smooth zoom transition */
+    #canvas {
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 20px 20px;
+      transition: transform 0.2s ease-out;
+    }
+
+    /* Highlight the child of any selected <g> wrapper */
+    g.selected > * {
+      stroke: #00aaff !important;
+      stroke-width: 2px;
+    }
+
+    /* Custom scrollbar for canvas container */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+
+    /* Differentiate frame items in the layers panel */
+    .frame-item {
+      color: #ffcc00; /* golden-ish for frames */
+    }
+
+    /* Disable pointer events on handles by default so they don’t block clicks */
+    .resize-handle,
+    .rotate-handle {
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-white font-sans">
+  <div class="flex h-screen">
+    <!-- Sidebar Left -->
+    <aside class="w-64 bg-zinc-900 p-4 border-r border-zinc-800 flex flex-col">
+      <h2 class="text-sm font-bold uppercase mb-4">Layers</h2>
+      <ul id="layer-panel" class="space-y-1 text-sm flex-1 overflow-auto">
+        <!-- Layer items will populate here -->
+      </ul>
+      <div class="mt-4">
+        <button
+          id="import-button"
+          class="w-full text-xs text-zinc-400 hover:text-white"
+        >
+          Import SVG
+        </button>
+      </div>
+    </aside>
+
+    <!-- Center + Timeline -->
+    <div class="flex-1 flex flex-col relative">
+      <div class="flex-1 relative overflow-auto bg-zinc-900" id="canvas-container">
+        <svg
+          id="canvas"
+          class="absolute top-0 left-0 w-[4000px] h-[4000px] outline-none"
+          tabindex="0"
+        ></svg>
+      </div>
+
+      <!-- Shape Toolbar Above Timeline -->
+      <div class="relative z-20 flex justify-center bg-zinc-800 border-t border-b border-zinc-700 py-2">
+        <div class="flex space-x-4">
+          <button
+            data-shape="select"
+            title="Select"
+            class="hover:bg-zinc-700 p-2 rounded"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M16.862 4.487l.675 6.324-6.324-.675L3 21l7.488-8.213.675 6.324 6.324-.675L21 3l-4.138 1.487z"
+              />
+            </svg>
+          </button>
+          <button
+            data-shape="rectangle"
+            title="Rectangle"
+            class="hover:bg-zinc-700 p-2 rounded"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <rect x="4" y="6" width="16" height="12" rx="2" />
+            </svg>
+          </button>
+          <button
+            data-shape="circle"
+            title="Circle"
+            class="hover:bg-zinc-700 p-2 rounded"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="6" />
+            </svg>
+          </button>
+          <button
+            data-shape="polygon"
+            title="Polygon"
+            class="hover:bg-zinc-700 p-2 rounded"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <polygon points="12,2 22,22 2,22" />
+            </svg>
+          </button>
+          <button
+            data-shape="line"
+            title="Line"
+            class="hover:bg-zinc-700 p-2 rounded"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <line x1="4" y1="12" x2="20" y2="12" />
+            </svg>
+          </button>
+          <button
+            data-shape="text"
+            title="Text"
+            class="hover:bg-zinc-700 p-2 rounded"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path d="M4 6h16M12 6v12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="h-40 bg-zinc-900 border-t border-zinc-800 px-4 py-2">
+        <div class="text-xs text-zinc-400 mb-2">Timeline</div>
+        <div class="w-full h-[6px] bg-zinc-800 rounded mb-4"></div>
+        <div class="text-xs text-zinc-500">Keyframes editor placeholder</div>
+      </div>
+    </div>
+
+    <!-- Sidebar Right -->
+    <aside
+      class="w-80 bg-zinc-900 p-4 border-l border-zinc-800 overflow-y-auto"
+    >
+      <h2 class="text-sm font-bold uppercase mb-4">Properties</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs mb-1">Fill Color</label>
+          <input
+            id="svg-color"
+            type="color"
+            class="w-full h-8 rounded border border-zinc-700 bg-transparent"
+          />
+        </div>
+        <div>
+          <label class="block text-xs mb-1">Opacity</label>
+          <input
+            id="svg-opacity"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-xs mb-1">Scale</label>
+          <input
+            id="svg-scale"
+            type="number"
+            placeholder="Scale"
+            class="w-full rounded bg-zinc-800 border border-zinc-700 p-1"
+          />
+        </div>
+        <div>
+          <label class="block text-xs mb-1">Position</label>
+          <div class="flex gap-2">
+            <input
+              id="svg-x"
+              type="number"
+              placeholder="X"
+              class="w-1/2 rounded bg-zinc-800 border border-zinc-700 p-1"
+            />
+            <input
+              id="svg-y"
+              type="number"
+              placeholder="Y"
+              class="w-1/2 rounded bg-zinc-800 border border-zinc-700 p-1"
+            />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs mb-1">Rotation</label>
+          <input
+            id="svg-rotation"
+            type="number"
+            placeholder="Deg"
+            class="w-full rounded bg-zinc-800 border border-zinc-700 p-1"
+          />
+        </div>
+        <div>
+          <button
+            id="apply-properties"
+            class="w-full bg-blue-600 text-white py-1 rounded"
+          >
+            Apply Changes
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // STATE & UTILITY
+    let currentTool = "select";
+    let keyframes = []; // Store keyframes
+    let currentKeyframeIndex = -1; // Track current keyframe
+    let isPlaying = false; // Track playback state
+    let scaleVal = 1;
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let panOffset = { x: 0, y: 0 };
+    const maxScale = 3;
+
+    const canvasContainer = document.getElementById("canvas-container");
+    const canvas = document.getElementById("canvas");
+    const layerPanel = document.getElementById("layer-panel");
+    const importButton = document.getElementById("import-button");
+    const shapeButtons = document.querySelectorAll("[data-shape]");
+
+    // TOOLS: Set Active Tool
+    shapeButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        shapeButtons.forEach((b) => b.classList.remove("bg-zinc-700"));
+        btn.classList.add("bg-zinc-700");
+        currentTool = btn.getAttribute("data-shape");
+      });
+    });
+    // Initialize "Select"
+    document.querySelector('[data-shape="select"]').classList.add("bg-zinc-700");
+
+    // TRACK LAST MOUSE POSITION OVER CANVAS
+    let lastMousePosition = { x: 0, y: 0 };
+    canvasContainer.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      lastMousePosition.x = (e.clientX - rect.left - panOffset.x) / scaleVal;
+      lastMousePosition.y = (e.clientY - rect.top - panOffset.y) / scaleVal;
+    });
+
+    // KEYBIND: SHIFT+F to create Frame
+    document.addEventListener("keydown", (e) => {
+      if (e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        createFrame(lastMousePosition);
+      }
+      // KEYBIND: ALT+K to create Keyframe
+      if (e.altKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        createKeyframe();
+      }
+    });
+
+    // UTILITY: Find topmost "Frame" <g> at a given SVG coordinate
+    function findFrameAtPoint(x, y) {
+      // Convert SVG coords to screen coords, then use elementFromPoint
+      const pt = canvas.createSVGPoint();
+      pt.x = x;
+      pt.y = y;
+      const screenPt = pt.matrixTransform(canvas.getScreenCTM());
+      const topElem = document.elementFromPoint(screenPt.x, screenPt.y);
+      if (!topElem) return null;
+      // Walk up the DOM until a <g> with data-type="Frame" is found
+      let node = topElem;
+      while (node && node !== canvas) {
+        if (
+          node.nodeName === "g" &&
+          node.getAttribute("data-type") === "Frame"
+        ) {
+          return node;
+        }
+        node = node.parentNode;
+      }
+      return null;
+    }
+
+    function createFrame(position) {
+      const frameRect = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "rect"
+      );
+      const width = 400,
+        height = 300;
+      frameRect.setAttribute("x", position.x);
+      frameRect.setAttribute("y", position.y);
+      frameRect.setAttribute("width", width);
+      frameRect.setAttribute("height", height);
+      frameRect.setAttribute("fill", "none");
+      frameRect.setAttribute("stroke", "#00ff00");
+      frameRect.setAttribute("stroke-width", 2);
+
+      const wrapper = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "g"
+      );
+      wrapper.classList.add("frame-item"); // Add class for frame differentiation
+      wrapper.setAttribute("data-type", "Frame"); // Set data-type for identification
+      wrapper.appendChild(frameRect);
+
+      // By default, new frames go to the root <svg>
+      canvas.appendChild(wrapper);
+      makeSVGSelectable(wrapper);
+      updateLayerPanel();
+    }
+
+    function createKeyframe() {
+      const selected = document.querySelector("g.selected");
+      if (selected) {
+        const transform = selected.getAttribute("transform") || "";
+        const x = parseFloat(selected.getAttribute("data-x") || 0);
+        const y = parseFloat(selected.getAttribute("data-y") || 0);
+        const scaleMatch = transform.includes("scale(")
+          ? transform.match(/scale\(([^)]+)\)/)[1]
+          : 1;
+        const rotMatch = transform.includes("rotate(")
+          ? transform.match(/rotate\(([^,]+),/)[1]
+          : 0;
+
+        const position = {
+          x: x,
+          y: y,
+          scale: parseFloat(scaleMatch),
+          rotation: parseFloat(rotMatch),
+        };
+        keyframes.push(position);
+        currentKeyframeIndex++;
+        console.log("Keyframe created:", position);
+      }
+    }
+
+    // PLAYBACK FUNCTIONALITY
+    function playKeyframes() {
+      if (isPlaying || keyframes.length === 0) return;
+      isPlaying = true;
+      let index = 0;
+
+      const interval = setInterval(() => {
+        if (index >= keyframes.length) {
+          clearInterval(interval);
+          isPlaying = false;
+          return;
+        }
+        const keyframe = keyframes[index];
+        const selected = document.querySelector("g.selected");
+        if (selected) {
+          selected.setAttribute("data-x", keyframe.x);
+          selected.setAttribute("data-y", keyframe.y);
+          selected.setAttribute(
+            "transform",
+            `translate(${keyframe.x}px, ${keyframe.y}px) scale(${
+              keyframe.scale
+            }) rotate(${keyframe.rotation})`
+          );
+          updateTransform(); // Update the visual representation
+        }
+        index++;
+      }, 1000); // 1 second per keyframe
+    }
+
+    // PAN & ZOOM
+    canvasContainer.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const zoomFactor = 0.02;
+      const prevScale = scaleVal;
+      scaleVal =
+        e.deltaY < 0
+          ? Math.min(maxScale, scaleVal + zoomFactor)
+          : Math.max(1, scaleVal - zoomFactor);
+
+      const rect2 = canvas.getBoundingClientRect();
+      const dx2 = (e.clientX - rect2.left) / prevScale;
+      const dy2 = (e.clientY - rect2.top) / prevScale;
+      panOffset.x -= dx2 * (scaleVal - prevScale);
+      panOffset.y -= dy2 * (scaleVal - prevScale);
+      updateTransform();
+    });
+
+    canvasContainer.addEventListener("mousedown", (e) => {
+      if (
+        e.button === 1 ||
+        e.button === 2 ||
+        (e.button === 0 && e.altKey)
+      ) {
+        isPanning = true;
+        panStart.x = e.clientX - panOffset.x;
+        panStart.y = e.clientY - panOffset.y;
+        canvasContainer.style.cursor = "grabbing";
+      }
+    });
+
+    canvasContainer.addEventListener("mousemove", (e) => {
+      if (!isPanning) return;
+      panOffset.x = e.clientX - panStart.x;
+      panOffset.y = e.clientY - panStart.y;
+      updateTransform();
+    });
+    ["mouseup", "mouseleave"].forEach((evt) => {
+      canvasContainer.addEventListener(evt, () => {
+        isPanning = false;
+        canvasContainer.style.cursor = "default";
+      });
+    });
+
+    function updateTransform() {
+      canvas.style.transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scaleVal})`;
+    }
+
+    // IMPORT / PASTE SVG
+    document.addEventListener("paste", (e) => {
+      const pastedText =
+        (e.clipboardData || window.clipboardData).getData("text");
+      if (pastedText.includes("<svg")) {
+        insertSVGToCanvas(pastedText, lastMousePosition);
+      }
+    });
+    importButton.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".svg";
+      input.onchange = (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) =>
+          insertSVGToCanvas(evt.target.result, lastMousePosition);
+        reader.readAsText(file);
+      };
+      input.click();
+    });
+
+    function insertSVGToCanvas(svgString, position) {
+      const svgElem = new DOMParser()
+        .parseFromString(svgString, "image/svg+xml")
+        .documentElement;
+      svgElem.setAttribute("x", position.x);
+      svgElem.setAttribute("y", position.y);
+      svgElem.setAttribute("width", svgElem.getAttribute("width") || 100);
+      svgElem.setAttribute("height", svgElem.getAttribute("height") || 100);
+
+      const wrapper = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "g"
+      );
+      wrapper.setAttribute("data-type", "SVG"); // Set data-type for identification
+      wrapper.appendChild(svgElem);
+
+      // If the point is inside a Frame, append there; otherwise, root <svg>
+      const parentFrame = findFrameAtPoint(position.x, position.y);
+      if (parentFrame) {
+        parentFrame.appendChild(wrapper);
+      } else {
+        canvas.appendChild(wrapper);
+      }
+
+      makeSVGSelectable(wrapper);
+      updateLayerPanel();
+    }
+
+    // SHAPE CREATION
+    function createShape(type, position) {
+      let shape;
+      switch (type) {
+        case "rectangle":
+          shape = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "rect"
+          );
+          shape.setAttribute("width", 100);
+          shape.setAttribute("height", 80);
+          shape.setAttribute("fill", "#ffffff");
+          shape.setAttribute("x", position.x);
+          shape.setAttribute("y", position.y);
+          break;
+        case "circle":
+          shape = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "circle"
+          );
+          shape.setAttribute("r", 50);
+          shape.setAttribute("fill", "#ffffff");
+          shape.setAttribute("cx", position.x + 50);
+          shape.setAttribute("cy", position.y + 50);
+          break;
+        case "polygon":
+          shape = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "polygon"
+          );
+          shape.setAttribute(
+            "points",
+            `${position.x + 50},${position.y}
+             ${position.x + 150},${position.y + 200}
+             ${position.x},${position.y + 200}`.replace(/\s+/g, " ")
+          );
+          shape.setAttribute("fill", "#ffffff");
+          break;
+        case "line":
+          shape = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "line"
+          );
+          shape.setAttribute("x1", position.x);
+          shape.setAttribute("y1", position.y);
+          shape.setAttribute("x2", position.x + 100);
+          shape.setAttribute("y2", position.y + 100);
+          shape.setAttribute("stroke", "#ffffff");
+          shape.setAttribute("stroke-width", 2);
+          break;
+        case "text":
+          shape = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "text"
+          );
+          shape.textContent = "Text";
+          shape.setAttribute("x", position.x);
+          shape.setAttribute("y", position.y + 16);
+          shape.setAttribute("fill", "#ffffff");
+          shape.setAttribute("font-size", "16");
+          break;
+        default:
+          return;
+      }
+
+      const wrapper = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "g"
+      );
+      wrapper.setAttribute(
+        "data-type",
+        type.charAt(0).toUpperCase() + type.slice(1)
+      ); // Set data-type for identification
+      wrapper.appendChild(shape);
+
+      // Nest inside frame if the point lies within one
+      const parentFrame = findFrameAtPoint(position.x, position.y);
+      if (parentFrame) {
+        parentFrame.appendChild(wrapper);
+      } else {
+        canvas.appendChild(wrapper);
+      }
+
+      makeSVGSelectable(wrapper);
+      updateLayerPanel();
+    }
+    document
+      .querySelector('[data-shape="rectangle"]')
+      .addEventListener("click", () =>
+        createShape("rectangle", lastMousePosition)
+      );
+    document
+      .querySelector('[data-shape="circle"]')
+      .addEventListener("click", () =>
+        createShape("circle", lastMousePosition)
+      );
+    document
+      .querySelector('[data-shape="polygon"]')
+      .addEventListener("click", () =>
+        createShape("polygon", lastMousePosition)
+      );
+    document
+      .querySelector('[data-shape="line"]')
+      .addEventListener("click", () => createShape("line", lastMousePosition));
+    document
+      .querySelector('[data-shape="text"]')
+      .addEventListener("click", () => createShape("text", lastMousePosition));
+
+    // SELECTION MODE
+    function makeSVGSelectable(wrapper) {
+      // Unified click handler on the <g> itself
+      const selectHandler = (e) => {
+        e.stopPropagation();
+        if (currentTool !== "select") return;
+
+        // Deselect any previously selected group
+        document.querySelectorAll("g.selected").forEach((g) => {
+          g.classList.remove("selected");
+          // hide handles
+          g.querySelectorAll(".resize-handle, .rotate-handle").forEach((h) => {
+            h.style.display = "none";
+          });
+        });
+
+        // Mark this <g> as selected
+        wrapper.classList.add("selected");
+        // show its handles
+        wrapper.querySelectorAll(".resize-handle, .rotate-handle").forEach((h) => {
+          h.style.display = "block";
+        });
+
+        updatePropertiesPanel(wrapper);
+        highlightLayerItem(wrapper);
+      };
+
+      wrapper.addEventListener("click", selectHandler);
+
+      // Make draggable + add handles
+      makeSVGDraggable(wrapper);
+      addResizeRotateHandles(wrapper);
+    }
+
+    // DRAGGING (select only)
+    function makeSVGDraggable(wrapper) {
+      let isDragging = false;
+      let startX, startY;
+      wrapper.addEventListener("mousedown", (e) => {
+        if (currentTool !== "select") return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+      });
+      wrapper.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        const dx = (e.clientX - startX) / scaleVal;
+        const dy = (e.clientY - startY) / scaleVal;
+        startX = e.clientX;
+        startY = e.clientY;
+        const x = parseFloat(wrapper.getAttribute("data-x") || 0) + dx;
+        const y = parseFloat(wrapper.getAttribute("data-y") || 0) + dy;
+        wrapper.setAttribute("data-x", x);
+        wrapper.setAttribute("data-y", y);
+        wrapper.style.transform = `translate(${x}px, ${y}px)`;
+      });
+      ["mouseup", "mouseleave"].forEach((evt) =>
+        wrapper.addEventListener(evt, () => {
+          isDragging = false;
+        })
+      );
+    }
+
+    // RESIZE & ROTATE HANDLES
+    function addResizeRotateHandles(wrapper) {
+      const bbox = wrapper.getBBox();
+      const w = bbox.width,
+        h = bbox.height;
+
+      /* Resize handle */
+      const rHandle = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "rect"
+      );
+      rHandle.setAttribute("width", 8);
+      rHandle.setAttribute("height", 8);
+      rHandle.setAttribute("fill", "#00bfff");
+      rHandle.setAttribute("class", "resize-handle");
+      rHandle.setAttribute("cursor", "nwse-resize");
+      rHandle.setAttribute("x", w - 4);
+      rHandle.setAttribute("y", h - 4);
+      rHandle.style.display = "none";
+      wrapper.appendChild(rHandle);
+
+      let isResizing = false;
+      rHandle.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        isResizing = true;
+        // Temporarily re-enable pointer-events so dragging works
+        rHandle.style.pointerEvents = "all";
+      });
+      document.addEventListener("mousemove", (e) => {
+        if (!isResizing) return;
+        const newW =
+          e.clientX / scaleVal -
+          (bbox.x + parseFloat(wrapper.getAttribute("data-x") || 0));
+        const newH =
+          e.clientY / scaleVal -
+          (bbox.y + parseFloat(wrapper.getAttribute("data-y") || 0));
+        const child = wrapper.firstElementChild;
+        child.setAttribute("width", newW);
+        child.setAttribute("height", newH);
+        rHandle.setAttribute("x", newW - 4);
+        rHandle.setAttribute("y", newH - 4);
+      });
+      document.addEventListener("mouseup", () => {
+        if (isResizing) {
+          isResizing = false;
+          rHandle.style.pointerEvents = "none";
+        }
+      });
+
+      /* Rotate handle */
+      const rotHandle = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "circle"
+      );
+      rotHandle.setAttribute("r", 6);
+      rotHandle.setAttribute("fill", "#ff4500");
+      rotHandle.setAttribute("class", "rotate-handle");
+      rotHandle.setAttribute("cursor", "pointer");
+      rotHandle.setAttribute("cx", w / 2);
+      rotHandle.setAttribute("cy", -12);
+      rotHandle.style.display = "none";
+      wrapper.appendChild(rotHandle);
+
+      let isRotating = false,
+        initialAngle;
+      rotHandle.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        isRotating = true;
+        // Temporarily re-enable pointer events
+        rotHandle.style.pointerEvents = "all";
+        const centerX =
+          bbox.x +
+          w / 2 +
+          parseFloat(wrapper.getAttribute("data-x") || 0);
+        const centerY =
+          bbox.y +
+          h / 2 +
+          parseFloat(wrapper.getAttribute("data-y") || 0);
+        initialAngle = Math.atan2(
+          e.clientY / scaleVal - centerY,
+          e.clientX / scaleVal - centerX
+        );
+      });
+      document.addEventListener("mousemove", (e) => {
+        if (!isRotating) return;
+        const centerX =
+          bbox.x + w / 2 + parseFloat(wrapper.getAttribute("data-x") || 0);
+        const centerY =
+          bbox.y + h / 2 + parseFloat(wrapper.getAttribute("data-y") || 0);
+        const currentAngle = Math.atan2(
+          e.clientY / scaleVal - centerY,
+          e.clientX / scaleVal - centerX
+        );
+        const rotation = (currentAngle - initialAngle) * (180 / Math.PI);
+        wrapper.setAttribute(
+          "transform",
+          `rotate(${rotation}, ${centerX}, ${centerY})`
+        );
+      });
+      document.addEventListener("mouseup", () => {
+        if (isRotating) {
+          isRotating = false;
+          rotHandle.style.pointerEvents = "none";
+        }
+      });
+    }
+
+    // PROPERTIES PANEL
+    const fillInput = document.getElementById("svg-color");
+    const opacityInput = document.getElementById("svg-opacity");
+    const scaleInput = document.getElementById("svg-scale");
+    const posXInput = document.getElementById("svg-x");
+    const posYInput = document.getElementById("svg-y");
+    const rotationInput = document.getElementById("svg-rotation");
+    let currentSelected = null;
+
+    function updatePropertiesPanel(wrapper) {
+      currentSelected = wrapper;
+      const child = wrapper.firstElementChild;
+      const fill = child.getAttribute("fill") || "#ffffff";
+      const op = child.getAttribute("opacity") || 1;
+      const transform = wrapper.getAttribute("transform") || "";
+      const scaleMatch = transform.includes("scale(")
+        ? transform.match(/scale\(([^)]+)\)/)[1]
+        : 1;
+      const rotMatch = transform.includes("rotate(")
+        ? transform.match(/rotate\(([^,]+),/)[1]
+        : 0;
+      const xTranslate = parseFloat(wrapper.getAttribute("data-x") || 0);
+      const yTranslate = parseFloat(wrapper.getAttribute("data-y") || 0);
+
+      fillInput.value = fill;
+      opacityInput.value = op;
+      scaleInput.value = scaleMatch;
+      posXInput.value = xTranslate;
+      posYInput.value = yTranslate;
+      rotationInput.value = rotMatch;
+
+      fillInput.oninput = () => child.setAttribute("fill", fillInput.value);
+      opacityInput.oninput = () =>
+        child.setAttribute("opacity", opacityInput.value);
+      scaleInput.oninput = () =>
+        wrapper.setAttribute("transform", `scale(${scaleInput.value})`);
+      posXInput.oninput = () => {
+        wrapper.setAttribute("data-x", posXInput.value);
+        wrapper.style.transform = `translate(${posXInput.value}px, ${posYInput.value}px) scale(${scaleVal})`;
+      };
+      posYInput.oninput = () => {
+        wrapper.setAttribute("data-y", posYInput.value);
+        wrapper.style.transform = `translate(${posXInput.value}px, ${posYInput.value}px) scale(${scaleVal})`;
+      };
+      rotationInput.oninput = () => {
+        const rot = rotationInput.value;
+        const bbox2 = wrapper.getBBox();
+        const cx2 =
+          bbox2.x +
+          bbox2.width / 2 +
+          parseFloat(wrapper.getAttribute("data-x") || 0);
+        const cy2 =
+          bbox2.y +
+          bbox2.height / 2 +
+          parseFloat(wrapper.getAttribute("data-y") || 0);
+        wrapper.setAttribute("transform", `rotate(${rot}, ${cx2}, ${cy2})`);
+      };
+    }
+
+    // LAYERS PANEL
+    function updateLayerPanel() {
+      layerPanel.innerHTML = "";
+      const groups = canvas.querySelectorAll("g");
+      groups.forEach((g, i) => {
+        const item = document.createElement("div");
+        const type = g.getAttribute("data-type") || "Layer";
+        item.className =
+          "layer-item p-1 hover:bg-zinc-700 cursor-pointer flex justify-between items-center";
+        // Display “Type N” (e.g. “Rectangle 3”, “Frame 1”, etc.)
+        item.innerHTML = `
+          <span class="${
+            g.classList.contains("frame-item") ? "frame-item" : ""
+          }">${type} ${i + 1}</span>
+          <button data-index="${i}" class="delete-btn text-xs text-red-400 hover:text-red-600">🗑️</button>
+        `;
+        // Clicking on layer item selects its group
+        item.addEventListener("click", () => {
+          if (currentTool !== "select") return;
+          groups[i].dispatchEvent(new Event("click"));
+        });
+        // Delete button
+        item.querySelector(".delete-btn").addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          groups[i].remove();
+          updateLayerPanel();
+        });
+        layerPanel.appendChild(item);
+      });
+    }
+
+    function highlightLayerItem(wrapper) {
+      const items = layerPanel.querySelectorAll(".layer-item");
+      items.forEach((it, idx) => {
+        it.classList.toggle(
+          "bg-blue-600",
+          Array.from(canvas.children)[idx] === wrapper
+        );
+      });
+    }
+
+    // DESELECT ON BACKGROUND CLICK
+    canvas.addEventListener("click", (e) => {
+      if (currentTool !== "select") return;
+      document
+        .querySelectorAll("g.selected")
+        .forEach((g) => {
+          g.classList.remove("selected");
+          g.querySelectorAll(".resize-handle, .rotate-handle").forEach((h) => {
+            h.style.display = "none";
+          });
+        });
+      layerPanel.querySelectorAll(".layer-item").forEach((it) =>
+        it.classList.remove("bg-blue-600")
+      );
+      currentSelected = null;
+    });
+
+    // INIT
+    window.addEventListener("DOMContentLoaded", () => {
+      canvas.focus();
+      updateLayerPanel();
+    });
+  </script>
+</body>
+</html>

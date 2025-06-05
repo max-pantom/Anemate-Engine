@@ -283,6 +283,12 @@
           <button id="play-keyframes" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-1 rounded">Play</button>
           <button id="stop-keyframes" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-1 rounded">Stop</button>
         </div>
+        <div id="export-container" style="display:none" class="space-y-2">
+          <select id="export-format" class="w-full bg-zinc-700 p-1 rounded text-white">
+            <option value="webm">WebM</option>
+          </select>
+          <button id="export-video" class="w-full bg-zinc-700 hover:bg-zinc-600 py-1 rounded">Export Video</button>
+        </div>
       </div>
     </aside>
   </div>
@@ -314,6 +320,9 @@
     const deleteKeyframeBtn = document.getElementById("delete-keyframe");
     const playBtn = document.getElementById("play-keyframes");
   const stopBtn = document.getElementById("stop-keyframes");
+    const exportContainer = document.getElementById("export-container");
+    const exportBtn = document.getElementById("export-video");
+    const exportFormat = document.getElementById("export-format");
 
     function updateKeyframeUI(id) {
       keyframePanel.innerHTML = "";
@@ -367,6 +376,7 @@
     stopBtn.addEventListener("click", () => {
       isPlaying = false;
     });
+    if (exportBtn) exportBtn.addEventListener("click", exportAnimation);
     if (playTimelineBtn)
       playTimelineBtn.addEventListener("click", playKeyframes);
     if (stopTimelineBtn)
@@ -431,6 +441,17 @@
           return node;
         }
         node = node.parentNode;
+      }
+      return null;
+    }
+
+    function getParentFrame(node) {
+      let current = node.parentNode;
+      while (current && current !== canvas) {
+        if (current.getAttribute && current.getAttribute("data-type") === "Frame") {
+          return current;
+        }
+        current = current.parentNode;
       }
       return null;
     }
@@ -530,6 +551,61 @@
         updateTransform();
         index++;
       }, 1000);
+    }
+
+    function exportAnimation() {
+      const selected = document.querySelector("g.selected");
+      if (!selected) return;
+      const parentFrame = getParentFrame(selected) ||
+        (selected.getAttribute("data-type") === "Frame" ? selected : null);
+      if (!parentFrame) {
+        alert("Selected element is not inside a Frame.");
+        return;
+      }
+      const framesArr = keyframes[selected.dataset.id];
+      if (!framesArr || framesArr.length === 0) {
+        alert("No keyframes to export.");
+        return;
+      }
+
+      const bbox = parentFrame.getBBox();
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = bbox.width;
+      exportCanvas.height = bbox.height;
+      const ctx = exportCanvas.getContext("2d");
+      const stream = exportCanvas.captureStream();
+      const chunks = [];
+      const rec = new MediaRecorder(stream, { mimeType: "video/webm" });
+      rec.ondataavailable = (e) => chunks.push(e.data);
+      rec.onstop = () => {
+        const blob = new Blob(chunks, { type: "video/webm" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "animation.webm";
+        a.click();
+      };
+      rec.start();
+
+      let i = 0;
+      function capture() {
+        if (i >= framesArr.length) {
+          rec.stop();
+          return;
+        }
+        applyKeyframe(i);
+        const data = new XMLSerializer().serializeToString(parentFrame);
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
+          ctx.drawImage(img, -bbox.x, -bbox.y);
+          setTimeout(() => {
+            i++;
+            capture();
+          }, 1000);
+        };
+        img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(data)));
+      }
+      capture();
     }
     // PAN & ZOOM
     canvasContainer.addEventListener("wheel", (e) => {
@@ -985,6 +1061,15 @@
           parseFloat(wrapper.getAttribute("data-y") || 0);
         wrapper.setAttribute("transform", `rotate(${rot}, ${cx2}, ${cy2})`);
       };
+
+      // Show export options if inside a Frame
+      const parentFrame = getParentFrame(wrapper) ||
+        (wrapper.getAttribute("data-type") === "Frame" ? wrapper : null);
+      if (parentFrame) {
+        exportContainer.style.display = "block";
+      } else {
+        exportContainer.style.display = "none";
+      }
     }
 
     // LAYERS PANEL
@@ -1040,6 +1125,7 @@
         it.classList.remove("bg-blue-600")
       );
       currentSelected = null;
+      exportContainer.style.display = "none";
     });
 
     // INIT

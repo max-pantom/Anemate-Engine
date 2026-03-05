@@ -17,7 +17,7 @@ body {
 
 .app {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 340px 1fr;
   min-height: 100vh;
 }
 
@@ -25,6 +25,7 @@ body {
   border-right: 1px solid var(--line);
   background: var(--panel);
   padding: 16px;
+  overflow-y: auto;
 }
 
 h1 { margin: 0; font-size: 1.1rem; letter-spacing: 0.03em; }
@@ -63,11 +64,18 @@ label {
 
 .tool-row {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
 
-#animList {
+.split-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+#animList,
+#layerList {
   list-style: none;
   padding-left: 0;
   margin: 10px 0 0;
@@ -77,12 +85,18 @@ label {
   overflow: auto;
 }
 
-#animList li {
+#animList li,
+#layerList li {
   background: #1f1f1f;
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 6px;
   font-size: 0.75rem;
+}
+
+#layerList li.is-selected {
+  border-color: #ababab;
+  background: #2b2b2b;
 }
 
 .hint { color: var(--muted); font-size: 0.75rem; }
@@ -104,6 +118,11 @@ label {
     linear-gradient(90deg, #202020 1px, transparent 1px),
     #111;
   background-size: 24px 24px;
+  cursor: crosshair;
+}
+
+#stage.is-panning {
+  cursor: grabbing;
 }
 
 .selected {

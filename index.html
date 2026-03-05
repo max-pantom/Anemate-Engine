@@ -3,18 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Anemate — Minimal SVG Tool</title>
+    <title>Anemate — Full SVG Animation Engine</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="app">
       <aside class="sidebar">
-        <h1>Anemate</h1>
-        <p class="subtitle">minimal svg + motion</p>
+        <h1>Anemate Engine</h1>
+        <p class="subtitle">after-effects inspired svg studio</p>
 
         <div class="tabs">
           <button class="tab is-active" data-tab="draw">Draw</button>
           <button class="tab" data-tab="animate">Animate</button>
+          <button class="tab" data-tab="engine">Engine</button>
           <button class="tab" data-tab="export">Export</button>
         </div>
 
@@ -25,6 +26,11 @@
             <button class="tool" data-tool="pan">Pan</button>
             <button class="tool" data-tool="rect">Rect</button>
             <button class="tool" data-tool="circle">Circle</button>
+            <button class="tool" data-tool="ellipse">Ellipse</button>
+            <button class="tool" data-tool="line">Line</button>
+            <button class="tool" data-tool="polygon">Polygon</button>
+            <button class="tool" data-tool="star">Star</button>
+            <button class="tool" data-tool="text">Text</button>
             <button class="tool" data-tool="path">Path</button>
           </div>
 
@@ -35,25 +41,29 @@
           <input id="strokeColor" type="color" value="#1e1e1e" />
 
           <label>Stroke width</label>
-          <input id="strokeWidth" type="range" min="1" max="12" value="2" />
+          <input id="strokeWidth" type="range" min="1" max="20" value="2" />
+
+          <label>Text content</label>
+          <input id="textValue" type="text" value="Anemate" />
 
           <div class="inline-actions">
-            <button id="duplicateBtn">Duplicate selected</button>
-            <button id="deleteBtn">Delete selected</button>
+            <button id="duplicateBtn">Duplicate</button>
+            <button id="deleteBtn">Delete</button>
+          </div>
+
+          <div class="inline-actions">
+            <button id="groupBtn">Group</button>
+            <button id="ungroupBtn">Ungroup</button>
           </div>
 
           <label>Grid</label>
           <div class="grid-row">
-            <label class="check"><input id="snapToggle" type="checkbox" /> Snap to grid</label>
+            <label class="check"><input id="snapToggle" type="checkbox" /> Snap</label>
             <input id="gridSize" type="number" min="4" max="64" value="24" />
           </div>
 
           <label>Import SVG</label>
           <input id="svgImport" type="file" accept=".svg,image/svg+xml" />
-
-          <label>Extrude depth</label>
-          <input id="extrudeDepth" type="range" min="0" max="20" value="6" />
-          <button id="extrudeBtn">Extrude selected</button>
 
           <label>Layers</label>
           <ul id="layersList"></ul>
@@ -69,6 +79,8 @@
             <option value="translate">Translate</option>
             <option value="rotate">Rotate</option>
             <option value="scale">Scale</option>
+            <option value="skewX">Skew X</option>
+            <option value="skewY">Skew Y</option>
             <option value="opacity">Opacity</option>
           </select>
 
@@ -76,10 +88,21 @@
           <input id="animFrom" type="text" value="0 0" />
 
           <label>To</label>
-          <input id="animTo" type="text" value="80 0" />
+          <input id="animTo" type="text" value="120 0" />
 
           <label>Duration (s)</label>
           <input id="animDur" type="number" min="0.1" step="0.1" value="2" />
+
+          <label>Delay (s)</label>
+          <input id="animDelay" type="number" min="0" step="0.1" value="0" />
+
+          <label>Loop</label>
+          <select id="animLoop">
+            <option value="indefinite">Infinite</option>
+            <option value="1">One-shot</option>
+            <option value="2">2 loops</option>
+            <option value="3">3 loops</option>
+          </select>
 
           <label>Easing</label>
           <select id="animEase">
@@ -87,30 +110,63 @@
             <option value="ease-in">Ease in</option>
             <option value="ease-out">Ease out</option>
             <option value="ease-in-out">Ease in out</option>
+            <option value="back">Back</option>
+            <option value="overshoot">Overshoot</option>
           </select>
 
-          <label>Animation templates</label>
-          <select id="animTemplate">
-            <option value="slide-right">Slide right</option>
-            <option value="bounce">Bounce</option>
-            <option value="spin">Spin</option>
-            <option value="pulse">Pulse</option>
-            <option value="fade-in-out">Fade in/out</option>
-          </select>
-          <button id="applyTemplateBtn">Apply template</button>
+          <label>Template</label>
+          <select id="animTemplate"></select>
 
           <div class="inline-actions">
-            <button id="addAnimBtn">Add key animation</button>
-            <button id="clearAnimBtn">Clear selected animations</button>
+            <button id="applyTemplateBtn">Apply template</button>
+            <button id="addAnimBtn">Add animation</button>
+          </div>
+
+          <div class="inline-actions">
+            <button id="clearAnimBtn">Clear selected anims</button>
+            <button id="staggerBtn">Stagger all layers</button>
           </div>
 
           <div class="inline-actions">
             <button id="playBtn">Play</button>
             <button id="pauseBtn">Pause</button>
-            <button id="previewBtn">Restart preview</button>
+            <button id="previewBtn">Restart</button>
           </div>
 
           <ul id="animList"></ul>
+        </section>
+
+        <section class="panel" data-panel="engine">
+          <label>Engine FX</label>
+          <div class="inline-actions">
+            <button id="gradientBtn">Auto gradient</button>
+            <button id="shadowBtn">Drop shadow</button>
+          </div>
+          <div class="inline-actions">
+            <button id="glowBtn">Glow</button>
+            <button id="blurBtn">Blur</button>
+          </div>
+
+          <label>Auto Layout</label>
+          <div class="inline-actions">
+            <button id="alignLeftBtn">Align left</button>
+            <button id="alignCenterBtn">Align center</button>
+          </div>
+          <div class="inline-actions">
+            <button id="spaceXBtn">Distribute X</button>
+            <button id="normalizeBtn">Normalize sizes</button>
+          </div>
+
+          <label>Scene Preset</label>
+          <select id="scenePreset">
+            <option value="hero">Hero intro</option>
+            <option value="loader">Loader</option>
+            <option value="floating-icons">Floating icons</option>
+          </select>
+          <button id="sceneBtn">Build scene preset</button>
+
+          <label>50 feature matrix</label>
+          <ol id="featureList" class="feature-list"></ol>
         </section>
 
         <section class="panel" data-panel="export">
@@ -118,12 +174,13 @@
             <button id="undoBtn">Undo</button>
             <button id="redoBtn">Redo</button>
           </div>
-          <label>Viewport</label>
+          <label>Viewport zoom</label>
           <input id="zoomRange" type="range" min="20" max="300" value="100" />
           <button id="resetViewBtn">Reset zoom & pan</button>
           <button id="clearBtn">Clear canvas</button>
           <button id="exportBtn">Export SVG</button>
-          <p class="hint">Keeps shapes + animation tags.</p>
+          <button id="exportJsonBtn">Export JSON project</button>
+          <p class="hint">Exports vector + timeline metadata.</p>
         </section>
       </aside>
 

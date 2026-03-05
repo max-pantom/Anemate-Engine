@@ -1,68 +1,111 @@
-/* Add any custom styles here */
-
-/* Hide default scrollbar */
-#canvas-container {
-    overflow: hidden; /* Hide the default scrollbar */
+:root {
+  --bg: #0f0f0f;
+  --panel: #171717;
+  --line: #2b2b2b;
+  --ink: #dddddd;
+  --muted: #8d8d8d;
+  --accent: #6f6f6f;
 }
 
-/* Custom scrollbar styles */
-#canvas-container::-webkit-scrollbar {
-    width: 4px; /* Width of the scrollbar */
-}
-
-#canvas-container::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1); /* Track color */
-}
-
-#canvas-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3); /* Thumb color */
-    border-radius: 4px; /* Rounded corners */
-}
-
-#canvas-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5); /* Thumb color on hover */
-}
-
-/* Keyframe editor styles */
-.keyframe-editor {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 10px;
-    border-radius: 8px;
-    margin-top: 10px;
-}
-
-.keyframe {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    margin-bottom: 5px;
-}
-
-.keyframe input {
-    width: 60px;
-    background: transparent;
-    border: none;
-    color: white;
-    outline: none;
-}
-::-webkit-scrollbar {
-    width: 4px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background-color: rgba(255,255,255,0.1);
-    border-radius: 10px;
-  }
-/* styles.css */
+* { box-sizing: border-box; }
 body {
-    background-color: #0f0f0f;
-  }
-  
-  #canvas {
-    background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
-  }
-    
+  margin: 0;
+  font-family: Inter, system-ui, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  padding: 16px;
+}
+
+h1 { margin: 0; font-size: 1.1rem; letter-spacing: 0.03em; }
+.subtitle { margin: 2px 0 14px; color: var(--muted); font-size: 0.8rem; }
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+button, select, input {
+  width: 100%;
+  background: #212121;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+button:hover { border-color: var(--accent); cursor: pointer; }
+
+.tab.is-active,
+.tool.is-active { background: #303030; }
+
+.panel { display: none; }
+.panel.is-active { display: block; }
+
+label {
+  display: block;
+  margin: 10px 0 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.tool-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+#animList {
+  list-style: none;
+  padding-left: 0;
+  margin: 10px 0 0;
+  display: grid;
+  gap: 6px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+#animList li {
+  background: #1f1f1f;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px;
+  font-size: 0.75rem;
+}
+
+.hint { color: var(--muted); font-size: 0.75rem; }
+
+.stage-wrap { display: grid; grid-template-rows: auto 1fr; }
+.toolbar {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+#stage {
+  width: 100%;
+  height: calc(100vh - 42px);
+  display: block;
+  background:
+    linear-gradient(#202020 1px, transparent 1px),
+    linear-gradient(90deg, #202020 1px, transparent 1px),
+    #111;
+  background-size: 24px 24px;
+}
+
+.selected {
+  outline: 1px dashed #bdbdbd;
+}

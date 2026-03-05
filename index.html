@@ -22,6 +22,7 @@
           <label>Tool</label>
           <div class="tool-row">
             <button class="tool is-active" data-tool="select">Select</button>
+            <button class="tool" data-tool="pan">Pan</button>
             <button class="tool" data-tool="rect">Rect</button>
             <button class="tool" data-tool="circle">Circle</button>
             <button class="tool" data-tool="path">Path</button>
@@ -36,12 +37,43 @@
           <label>Stroke width</label>
           <input id="strokeWidth" type="range" min="1" max="12" value="2" />
 
+          <label class="inline-row">
+            <input id="snapToggle" type="checkbox" /> Snap to grid
+          </label>
+          <label>Grid size</label>
+          <input id="gridSize" type="number" min="4" max="100" value="24" />
+
           <label>Extrude depth</label>
           <input id="extrudeDepth" type="range" min="0" max="20" value="6" />
           <button id="extrudeBtn">Extrude selected</button>
+
+          <div class="button-row">
+            <button id="duplicateBtn">Duplicate</button>
+            <button id="deleteBtn">Delete</button>
+          </div>
+          <div class="button-row">
+            <button id="frontBtn">Bring front</button>
+            <button id="backBtn">Send back</button>
+          </div>
+
+          <div class="button-row">
+            <button id="undoBtn">Undo</button>
+            <button id="redoBtn">Redo</button>
+          </div>
         </section>
 
         <section class="panel" data-panel="animate">
+          <label>Animation template</label>
+          <select id="animTemplate">
+            <option value="custom">Custom</option>
+            <option value="slideRight">Slide right</option>
+            <option value="pulse">Pulse</option>
+            <option value="spin">Spin</option>
+            <option value="fade">Fade in/out</option>
+            <option value="bounce">Bounce</option>
+          </select>
+          <button id="applyTemplateBtn">Apply template</button>
+
           <label>Animation type</label>
           <select id="animType">
             <option value="translate">Translate</option>
@@ -59,16 +91,32 @@
           <label>Duration (s)</label>
           <input id="animDur" type="number" min="0.1" step="0.1" value="2" />
 
-          <button id="addAnimBtn">Add key animation</button>
-          <button id="previewBtn">Preview all</button>
+          <div class="button-row">
+            <button id="addAnimBtn">Add animation</button>
+            <button id="clearAnimBtn">Clear anims</button>
+          </div>
+          <div class="button-row triple">
+            <button id="playBtn">Play</button>
+            <button id="pauseBtn">Pause</button>
+            <button id="stopBtn">Stop</button>
+          </div>
 
           <ul id="animList"></ul>
         </section>
 
         <section class="panel" data-panel="export">
+          <label>Import SVG</label>
+          <input id="importSvg" type="file" accept=".svg,image/svg+xml" />
+
+          <div class="button-row">
+            <button id="zoomInBtn">Zoom +</button>
+            <button id="zoomOutBtn">Zoom −</button>
+            <button id="resetViewBtn">Reset view</button>
+          </div>
+
           <button id="clearBtn">Clear canvas</button>
           <button id="exportBtn">Export SVG</button>
-          <p class="hint">Keeps shapes + animation tags.</p>
+          <p class="hint">Pan with Pan tool or hold Space + drag. Wheel to zoom.</p>
         </section>
       </aside>
 

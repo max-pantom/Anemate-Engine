@@ -17,7 +17,7 @@ body {
 
 .app {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 320px 1fr;
   min-height: 100vh;
 }
 
@@ -25,6 +25,7 @@ body {
   border-right: 1px solid var(--line);
   background: var(--panel);
   padding: 16px;
+  overflow-y: auto;
 }
 
 h1 { margin: 0; font-size: 1.1rem; letter-spacing: 0.03em; }
@@ -61,10 +62,31 @@ label {
   font-size: 0.8rem;
 }
 
+.inline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-row input {
+  width: auto;
+}
+
 .tool-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.button-row.triple {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 #animList {

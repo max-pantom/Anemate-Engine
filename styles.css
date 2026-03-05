@@ -1,68 +1,71 @@
-/* Add any custom styles here */
-
-/* Hide default scrollbar */
-#canvas-container {
-    overflow: hidden; /* Hide the default scrollbar */
+:root {
+  --bg: #101012;
+  --panel: #18181b;
+  --soft: #27272a;
+  --line: #3f3f46;
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --accent: #d4d4d8;
 }
 
-/* Custom scrollbar styles */
-#canvas-container::-webkit-scrollbar {
-    width: 4px; /* Width of the scrollbar */
-}
-
-#canvas-container::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1); /* Track color */
-}
-
-#canvas-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3); /* Thumb color */
-    border-radius: 4px; /* Rounded corners */
-}
-
-#canvas-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5); /* Thumb color on hover */
-}
-
-/* Keyframe editor styles */
-.keyframe-editor {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 10px;
-    border-radius: 8px;
-    margin-top: 10px;
-}
-
-.keyframe {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    margin-bottom: 5px;
-}
-
-.keyframe input {
-    width: 60px;
-    background: transparent;
-    border: none;
-    color: white;
-    outline: none;
-}
-::-webkit-scrollbar {
-    width: 4px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background-color: rgba(255,255,255,0.1);
-    border-radius: 10px;
-  }
-/* styles.css */
+* { box-sizing: border-box; }
 body {
-    background-color: #0f0f0f;
-  }
-  
-  #canvas {
-    background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
-  }
-    
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.app-shell { display: grid; grid-template-columns: 260px 1fr 240px; height: 100vh; }
+.panel { background: var(--panel); border-right: 1px solid var(--line); padding: 14px; overflow: auto; }
+.right-panel { border-right: 0; border-left: 1px solid var(--line); }
+
+h1, h2 { margin: 0 0 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; }
+.muted { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+
+.control-group { margin-bottom: 16px; display: grid; gap: 8px; }
+label { font-size: 12px; color: var(--muted); display: grid; gap: 4px; }
+button, input {
+  background: var(--soft);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.active { background: #2c2c31; border-color: var(--accent); }
+
+.tool-grid { display: grid; gap: 6px; grid-template-columns: 1fr 1fr; }
+
+.workspace { display: grid; grid-template-rows: 46px 1fr; min-width: 0; }
+.tabs { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: #141417; }
+.tab { display: none; min-height: 0; }
+.tab.active { display: block; }
+
+.canvas-wrap {
+  height: calc(100vh - 46px);
+  overflow: auto;
+  background: radial-gradient(circle at 1px 1px, #24242a 1px, #101012 0);
+  background-size: 24px 24px;
+}
+#canvas {
+  display: block;
+  width: 1200px;
+  height: 800px;
+  margin: 28px;
+  background: #0d0d0f;
+  border: 1px solid #323238;
+}
+
+.selected-shape { filter: drop-shadow(0 0 4px #fff3); }
+.extrude-back { opacity: 0.55; }
+
+#layers { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+#layers li { padding: 8px; background: var(--soft); border: 1px solid var(--line); border-radius: 8px; font-size: 12px; cursor: pointer; }
+#layers li.active { border-color: var(--accent); }
+
+.timeline-head { padding: 14px; border-bottom: 1px solid var(--line); }
+.anim-controls { display: grid; grid-template-columns: repeat(4, minmax(140px, 1fr)); gap: 10px; padding: 14px; }
+.timeline-list { padding: 14px; display: grid; gap: 8px; max-height: calc(100vh - 260px); overflow: auto; }
+.kf-item { border: 1px solid var(--line); background: var(--soft); border-radius: 8px; padding: 8px; font-size: 12px; }

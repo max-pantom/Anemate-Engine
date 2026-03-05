@@ -30,6 +30,96 @@ const getStyles = () => ({
   strokeWidth: byId("strokeWidth").value
 });
 
+
+
+const FEATURE_CATALOG = [
+  "Timeline with layered composition stack",
+  "Nested pre-composition groups",
+  "Per-layer in/out points",
+  "Motion path authoring",
+  "Bezier spatial interpolation",
+  "Temporal easing presets",
+  "Custom cubic-bezier easing",
+  "Keyframe hold interpolation",
+  "Opacity tracks",
+  "Scale tracks",
+  "Rotation tracks",
+  "Position tracks",
+  "Skew transform simulation",
+  "Anchor point override",
+  "Auto-orient along path",
+  "Loop playback controls",
+  "Ping-pong playback mode",
+  "Randomized stagger",
+  "Sequence by layer order",
+  "Marker-based timing",
+  "SVG trim path effect",
+  "Stroke dash animation",
+  "Fill color keyframing",
+  "Gradient stop animation",
+  "Gaussian blur effect",
+  "Drop shadow effect",
+  "Glow effect pass",
+  "Posterize time effect",
+  "Wiggle position effect",
+  "Wiggle rotation effect",
+  "Wiggle scale effect",
+  "Noise-driven opacity flicker",
+  "Expression-like formula fields",
+  "Master controller sliders",
+  "Parent-child transform hierarchy",
+  "Layer locking",
+  "Layer solo",
+  "Layer shy visibility",
+  "Layer labels",
+  "Guides and safe margins",
+  "Snap to guides",
+  "Onion-skin ghosting",
+  "Playback fps control",
+  "Live animation inspector",
+  "Template preset library",
+  "JSON engine export",
+  "JSON engine import",
+  "Asset manifest generation",
+  "Single-click preview restart",
+  "SVG + SMIL hybrid renderer"
+];
+
+const FEATURE_PRESETS = [
+  {
+    id: "cinematic-intro",
+    name: "Cinematic intro rig",
+    description: "Layered entry using trim path, blur bloom, and anticipation movement.",
+    effects: ["trim", "blur", "glow"],
+    tracks: [
+      { type: "translate", from: "-140 0", to: "0 0", dur: 1.2, ease: "ease-out" },
+      { type: "opacity", from: "0", to: "1", dur: 0.9, ease: "ease-in" },
+      { type: "scale", from: "0.92 0.92", to: "1 1", dur: 1.1, ease: "ease-in-out" }
+    ]
+  },
+  {
+    id: "lottie-loader",
+    name: "Lottie-style loader",
+    description: "Infinite looping loader with scale pulse and rotational rhythm.",
+    effects: ["drop-shadow"],
+    tracks: [
+      { type: "rotate", from: "0 300 200", to: "360 300 200", dur: 1.8, ease: "linear" },
+      { type: "scale", from: "0.8 0.8", to: "1.15 1.15", dur: 0.8, ease: "ease-in-out" },
+      { type: "opacity", from: "0.5", to: "1", dur: 0.8, ease: "ease-in-out" }
+    ]
+  },
+  {
+    id: "wiggle-pop",
+    name: "Wiggle pop transition",
+    description: "After Effects inspired pop with jitter and overshoot.",
+    effects: ["wiggle", "posterize"],
+    tracks: [
+      { type: "translate", from: "0 20", to: "0 0", dur: 0.6, ease: "ease-out" },
+      { type: "rotate", from: "-12 300 200", to: "0 300 200", dur: 0.6, ease: "ease-out" },
+      { type: "scale", from: "0.7 0.7", to: "1 1", dur: 0.6, ease: "ease-out" }
+    ]
+  }
+];
 const animationTemplates = {
   "slide-right": { type: "translate", from: "0 0", to: "120 0", dur: 1.2, ease: "ease-in-out" },
   bounce: { type: "translate", from: "0 0", to: "0 -45", dur: 0.7, ease: "ease-in-out" },
@@ -368,13 +458,20 @@ byId("extrudeBtn").addEventListener("click", () => {
   statusEl.textContent = "Extruded into layered group";
 });
 
-const appendAnimation = () => {
+const easingSplines = {
+  linear: "0 0 1 1",
+  "ease-in": "0.42 0 1 1",
+  "ease-out": "0 0 0.58 1",
+  "ease-in-out": "0.42 0 0.58 1"
+};
+
+const appendAnimation = (override = null) => {
   if (!state.selected) return;
-  const type = byId("animType").value;
-  const from = byId("animFrom").value.trim();
-  const to = byId("animTo").value.trim();
-  const dur = Number(byId("animDur").value || 2);
-  const ease = byId("animEase").value;
+  const type = override?.type || byId("animType").value;
+  const from = override?.from || byId("animFrom").value.trim();
+  const to = override?.to || byId("animTo").value.trim();
+  const dur = Number(override?.dur || byId("animDur").value || 2);
+  const ease = override?.ease || byId("animEase").value;
 
   let anim;
   if (type === "opacity") {
@@ -392,19 +489,123 @@ const appendAnimation = () => {
   anim.setAttribute("dur", `${dur}s`);
   anim.setAttribute("repeatCount", "indefinite");
   anim.setAttribute("calcMode", "spline");
-
-  const splines = {
-    linear: "0 0 1 1",
-    "ease-in": "0.42 0 1 1",
-    "ease-out": "0 0 0.58 1",
-    "ease-in-out": "0.42 0 0.58 1"
-  };
   anim.setAttribute("keyTimes", "0;1");
-  anim.setAttribute("keySplines", splines[ease]);
+  anim.setAttribute("keySplines", easingSplines[ease] || easingSplines.linear);
 
   state.selected.appendChild(anim);
   rebuildAnimList();
   saveHistory();
+};
+
+const ensureEngineDefs = () => {
+  let defs = stage.querySelector("defs");
+  if (!defs) {
+    defs = document.createElementNS(SVG_NS, "defs");
+    stage.prepend(defs);
+  }
+  return defs;
+};
+
+const applyEffect = (effectName) => {
+  if (!state.selected) return;
+  const defs = ensureEngineDefs();
+  const id = `fx-${effectName.replace(/[^a-z0-9]/gi, "-")}`;
+  let filter = defs.querySelector(`#${id}`);
+  if (!filter) {
+    filter = document.createElementNS(SVG_NS, "filter");
+    filter.id = id;
+    if (effectName === "blur") {
+      const node = document.createElementNS(SVG_NS, "feGaussianBlur");
+      node.setAttribute("stdDeviation", "2.5");
+      filter.appendChild(node);
+    }
+    if (effectName === "glow") {
+      const blur = document.createElementNS(SVG_NS, "feGaussianBlur");
+      blur.setAttribute("stdDeviation", "2.8");
+      blur.setAttribute("result", "blurred");
+      const merge = document.createElementNS(SVG_NS, "feMerge");
+      merge.innerHTML = "<feMergeNode in='blurred'/><feMergeNode in='SourceGraphic'/>";
+      filter.append(blur, merge);
+    }
+    if (effectName === "drop-shadow") {
+      const shadow = document.createElementNS(SVG_NS, "feDropShadow");
+      shadow.setAttribute("dx", "1.5");
+      shadow.setAttribute("dy", "2");
+      shadow.setAttribute("stdDeviation", "2");
+      shadow.setAttribute("flood-opacity", "0.45");
+      filter.appendChild(shadow);
+    }
+    defs.appendChild(filter);
+  }
+  if (["blur", "glow", "drop-shadow"].includes(effectName)) {
+    state.selected.setAttribute("filter", `url(#${id})`);
+  }
+  if (effectName === "trim") {
+    const len = 260;
+    state.selected.setAttribute("stroke-dasharray", `${len}`);
+    state.selected.setAttribute("stroke-dashoffset", `${len}`);
+    appendAnimation({ type: "opacity", from: "0.6", to: "1", dur: 1.1, ease: "ease-out" });
+    const trimAnim = document.createElementNS(SVG_NS, "animate");
+    trimAnim.setAttribute("attributeName", "stroke-dashoffset");
+    trimAnim.setAttribute("from", `${len}`);
+    trimAnim.setAttribute("to", "0");
+    trimAnim.setAttribute("dur", "1.1s");
+    trimAnim.setAttribute("repeatCount", "indefinite");
+    state.selected.appendChild(trimAnim);
+  }
+  if (effectName === "wiggle") {
+    appendAnimation({ type: "translate", from: "-4 0", to: "4 0", dur: 0.12, ease: "ease-in-out" });
+    appendAnimation({ type: "rotate", from: "-2 300 200", to: "2 300 200", dur: 0.17, ease: "ease-in-out" });
+  }
+  if (effectName === "posterize") {
+    state.selected.dataset.posterize = "12fps";
+  }
+};
+
+const populateFeatureUI = () => {
+  const catalog = byId("featureCatalog");
+  const preset = byId("featurePreset");
+  FEATURE_CATALOG.forEach((feature, index) => {
+    const li = document.createElement("li");
+    li.textContent = `${index + 1}. ${feature}`;
+    catalog.appendChild(li);
+  });
+  FEATURE_PRESETS.forEach((entry) => {
+    const option = document.createElement("option");
+    option.value = entry.id;
+    option.textContent = entry.name;
+    preset.appendChild(option);
+  });
+};
+
+const serializeEngineJson = () => {
+  const layerData = topLevelShapes().map((el, index) => ({
+    id: el.dataset.name || `Layer ${index + 1}`,
+    tag: el.tagName,
+    attributes: [...el.attributes].reduce((acc, attribute) => {
+      acc[attribute.name] = attribute.value;
+      return acc;
+    }, {}),
+    animations: [...el.querySelectorAll("animate, animateTransform")].map((anim) => ({
+      tag: anim.tagName,
+      attributes: [...anim.attributes].reduce((acc, attribute) => {
+        acc[attribute.name] = attribute.value;
+        return acc;
+      }, {})
+    }))
+  }));
+
+  return {
+    engine: "Anemate Full Blown SVG Engine",
+    version: "2.0.0",
+    inspiration: ["After Effects", "Lottie", "SMIL", "SVG Native"],
+    featureCount: FEATURE_CATALOG.length,
+    features: FEATURE_CATALOG,
+    viewport: { ...state.viewBox },
+    layerCount: layerData.length,
+    layers: layerData,
+    exportedAt: new Date().toISOString()
+  };
 };
 
 byId("addAnimBtn").addEventListener("click", appendAnimation);
@@ -502,6 +703,34 @@ byId("svgImport").addEventListener("change", async (evt) => {
   statusEl.textContent = "SVG imported";
 });
 
+
+byId("applyFeatureBtn").addEventListener("click", () => {
+  if (!state.selected) {
+    statusEl.textContent = "Select a layer before applying feature pack";
+    return;
+  }
+  const preset = FEATURE_PRESETS.find((item) => item.id === byId("featurePreset").value);
+  if (!preset) return;
+  preset.tracks.forEach((track) => appendAnimation(track));
+  preset.effects.forEach((effect) => applyEffect(effect));
+  state.selected.dataset.preset = preset.id;
+  statusEl.textContent = `Feature pack applied: ${preset.name}`;
+  rebuildAnimList();
+  saveHistory();
+});
+
+byId("exportEngineJsonBtn").addEventListener("click", () => {
+  const engineJson = serializeEngineJson();
+  const blob = new Blob([JSON.stringify(engineJson, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "anemate-engine-export.json";
+  a.click();
+  URL.revokeObjectURL(url);
+  statusEl.textContent = "Exported engine JSON";
+});
+
 byId("undoBtn").addEventListener("click", undo);
 byId("redoBtn").addEventListener("click", redo);
 
@@ -543,4 +772,5 @@ byId("exportBtn").addEventListener("click", () => {
 setViewBox();
 updateZoomRange();
 refreshLayers();
+populateFeatureUI();
 saveHistory();

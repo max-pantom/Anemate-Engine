@@ -91,7 +91,8 @@ label {
 }
 
 #layersList,
-#animList {
+#animList,
+#featureCatalog {
   list-style: none;
   padding-left: 0;
   margin: 10px 0 0;
@@ -102,7 +103,8 @@ label {
 }
 
 #layersList li,
-#animList li {
+#animList li,
+#featureCatalog li {
   background: #1f1f1f;
   border: 1px solid var(--line);
   border-radius: 6px;

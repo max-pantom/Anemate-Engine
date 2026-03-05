@@ -1,443 +1,287 @@
-// document.addEventListener('paste', (e) => {
-//     const clipboardData = e.clipboardData || window.clipboardData;
-//     const pastedText = clipboardData.getData('text');
-
-//     if (pastedText.includes('<svg')) {
-//         const canvas = document.getElementById('canvas');
-//         const svgElement = new DOMParser().parseFromString(pastedText, "image/svg+xml").documentElement;
-        
-//         // Set position for the pasted SVG
-//         svgElement.setAttribute('x', 100); // Default x position
-//         svgElement.setAttribute('y', 100); // Default y position
-        
-//         canvas.appendChild(svgElement);
-//         makeSVGDraggable(svgElement); // Make the pasted SVG draggable
-//         updateLayerPanel(); // Update the layer panel after adding an SVG
-//     }
-// });
-
-// // Basic animation function
-// function animateElement(el, props) {
-//     el.style.transition = 'all 1s ease-in-out';
-//     el.style.transform = 'translateX(100px)';
-// }
-
-// let isPanning = false;
-// let startX, startY;
-
-// const canvasContainer = document.getElementById('canvas-container');
-// const canvas = document.getElementById('canvas');
-// let scale = 1; // Initial scale
-
-// // Mouse wheel zoom
-// canvasContainer.addEventListener('wheel', (e) => {
-//     e.preventDefault();
-//     const zoomFactor = 0.1; // Adjust zoom speed
-//     if (e.deltaY < 0) {
-//         scale += zoomFactor; // Zoom in
-//     } else {
-//         scale = Math.max(0.1, scale - zoomFactor); // Zoom out, prevent negative scale
-//     }
-//     canvas.style.transform = `scale(${scale})`; // Apply scale to canvas
-// });
-
-// // Mouse down and move for panning
-// canvasContainer.addEventListener('mousedown', (e) => {
-//     isPanning = true;
-//     startX = e.clientX;
-//     startY = e.clientY;
-// });
-
-// canvasContainer.addEventListener('mousemove', (e) => {
-//     if (isPanning) {
-//         const dx = e.clientX - startX;
-//         const dy = e.clientY - startY;
-//         canvas.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; // Apply translation and scale
-//     }
-// });
-
-// canvasContainer.addEventListener('mouseup', () => {
-//     isPanning = false;
-// });
-// canvasContainer.addEventListener('mouseleave', () => {
-//     isPanning = false;
-// });
-
-// const layerPanel = document.getElementById('layer-panel');
-
-// // Function to make layers draggable
-// function makeLayersDraggable() {
-//     let draggedItem = null;
-
-//     layerPanel.addEventListener('dragstart', (e) => {
-//         draggedItem = e.target;
-//         e.dataTransfer.effectAllowed = 'move';
-//     });
-
-//     layerPanel.addEventListener('dragover', (e) => {
-//         e.preventDefault(); // Allow drop
-//         e.dataTransfer.dropEffect = 'move';
-//     });
-
-//     layerPanel.addEventListener('drop', (e) => {
-//         e.preventDefault();
-//         if (draggedItem) {
-//             const target = e.target.closest('.layer-item');
-//             if (target && target !== draggedItem) {
-//                 // Swap the layers
-//                 const parent = layerPanel;
-//                 parent.insertBefore(draggedItem, target.nextSibling);
-//                 updateLayerPanel(); // Update the layer panel to reflect changes
-//             }
-//         }
-//     });
-
-//     // Make each layer item draggable
-//     const layerItems = layerPanel.querySelectorAll('.layer-item');
-//     layerItems.forEach(item => {
-//         item.setAttribute('draggable', true);
-//     });
-// }
-
-// // Function to create resize handles for SVGs
-// function createResizeHandles(svg) {
-//     const handle = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-//     handle.setAttribute("width", 10);
-//     handle.setAttribute("height", 10);
-//     handle.setAttribute("fill", "blue");
-//     handle.setAttribute("cursor", "nwse-resize");
-//     handle.setAttribute("x", svg.getBBox().width - 5);
-//     handle.setAttribute("y", svg.getBBox().height - 5);
-//     handle.style.display = "none"; // Initially hidden
-//     svg.appendChild(handle);
-
-//     let isResizing = false;
-
-//     handle.addEventListener('mousedown', (e) => {
-//         e.stopPropagation(); // Prevent triggering the SVG drag
-//         isResizing = true;
-//     });
-
-//     document.addEventListener('mousemove', (e) => {
-//         if (isResizing) {
-//             const newWidth = e.clientX - svg.getBBox().x;
-//             const newHeight = e.clientY - svg.getBBox().y;
-//             svg.setAttribute('width', newWidth);
-//             svg.setAttribute('height', newHeight);
-//             handle.setAttribute("x", newWidth - 5);
-//             handle.setAttribute("y", newHeight - 5);
-//         }
-//     });
-
-//     document.addEventListener('mouseup', () => {
-//         isResizing = false;
-//     });
-
-//     return handle; // Return the handle for visibility control
-// }
-
-// // Function to create rotation handle for SVGs
-// function createRotationHandle(svg) {
-//     const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-//     handle.setAttribute("r", 10);
-//     handle.setAttribute("fill", "red");
-//     handle.setAttribute("cursor", "pointer");
-//     handle.setAttribute("cx", svg.getBBox().width + 15);
-//     handle.setAttribute("cy", svg.getBBox().height / 2);
-//     handle.style.display = "none"; // Initially hidden
-//     svg.appendChild(handle);
-
-//     let isRotating = false;
-//     let initialAngle;
-
-//     handle.addEventListener('mousedown', (e) => {
-//         e.stopPropagation(); // Prevent triggering the SVG drag
-//         isRotating = true;
-//         const bbox = svg.getBBox();
-//         const centerX = bbox.x + bbox.width / 2;
-//         const centerY = bbox.y + bbox.height / 2;
-//         initialAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-//     });
-
-//     document.addEventListener('mousemove', (e) => {
-//         if (isRotating) {
-//             const bbox = svg.getBBox();
-//             const centerX = bbox.x + bbox.width / 2;
-//             const centerY = bbox.y + bbox.height / 2;
-//             const currentAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-//             const rotation = currentAngle - initialAngle;
-//             const newRotation = (rotation * 180) / Math.PI; // Convert to degrees
-//             svg.setAttribute('transform', `rotate(${newRotation}, ${centerX}, ${centerY})`);
-//         }
-//     });
-
-//     document.addEventListener('mouseup', () => {
-//         isRotating = false;
-//     });
-
-//     return handle; // Return the handle for visibility control
-// }
-
-// // Function to make SVG elements draggable
-// function makeSVGDraggable(svg) {
-//     let isDragging = false;
-//     let startX, startY;
-
-//     svg.addEventListener('mousedown', (e) => {
-//         e.preventDefault(); // Prevent default behavior to avoid text selection
-//         isDragging = true;
-//         startX = e.clientX;
-//         startY = e.clientY;
-//     });
-
-//     svg.addEventListener('mousemove', (e) => {
-//         if (isDragging) {
-//             const dx = e.clientX - startX;
-//             const dy = e.clientY - startY;
-
-//             // Update the position of the SVG
-//             const currentX = parseFloat(svg.getAttribute('x')) || 0;
-//             const currentY = parseFloat(svg.getAttribute('y')) || 0;
-//             svg.setAttribute('x', currentX + dx);
-//             svg.setAttribute('y', currentY + dy);
-
-//             startX = e.clientX; // Update start positions
-//             startY = e.clientY;
-//         }
-//     });
-
-//     svg.addEventListener('mouseup', () => {
-//         isDragging = false;
-//     });
-
-//     svg.addEventListener('mouseleave', () => {
-//         isDragging = false;
-//     });
-// }
-
-// const svgColorInput = document.getElementById('svg-color');
-// const svgWidthInput = document.getElementById('svg-width');
-// const svgHeightInput = document.getElementById('svg-height');
-// const svgOpacityInput = document.getElementById('svg-opacity');
-// const svgStrokeColorInput = document.getElementById('svg-stroke-color');
-// const svgStrokeWidthInput = document.getElementById('svg-stroke-width');
-// const svgScaleInput = document.getElementById('svg-scale');
-// let currentSelectedSVG = null; // Track the currently selected SVG
-
-// // Function to update the properties panel based on the selected SVG
-// function updatePropertiesPanel(svg) {
-//     currentSelectedSVG = svg; // Set the currently selected SVG
-
-//     // Get current properties
-//     const currentColor = svg.getAttribute('fill') || '#000000'; // Default to black if no fill
-//     const currentWidth = svg.getAttribute('width') || 100; // Default width
-//     const currentHeight = svg.getAttribute('height') || 100; // Default height
-//     const currentOpacity = svg.getAttribute('opacity') || 1; // Default opacity
-//     const currentStrokeColor = svg.getAttribute('stroke') || '#000000'; // Default stroke color
-//     const currentStrokeWidth = svg.getAttribute('stroke-width') || 1; // Default stroke width
-//     const currentScale = svg.getAttribute('transform') ? svg.getAttribute('transform').match(/scale\(([^)]+)\)/)[1] : 1; // Default scale
-
-//     // Set input values
-//     svgColorInput.value = currentColor;
-//     svgWidthInput.value = currentWidth;
-//     svgHeightInput.value = currentHeight;
-//     svgOpacityInput.value = currentOpacity;
-//     svgStrokeColorInput.value = currentStrokeColor;
-//     svgStrokeWidthInput.value = currentStrokeWidth;
-//     svgScaleInput.value = currentScale; // Set scale input
-
-//     // Add event listeners to update properties
-//     svgColorInput.addEventListener('input', () => {
-//         if (currentSelectedSVG) {
-//             currentSelectedSVG.setAttribute('fill', svgColorInput.value);
-//         }
-//     });
-
-//     svgWidthInput.addEventListener('input', () => {
-//         if (currentSelectedSVG) {
-//             currentSelectedSVG.setAttribute('width', svgWidthInput.value);
-//         }
-//     });
-
-//     svgHeightInput.addEventListener('input', () => {
-//         if (currentSelectedSVG) {
-//             currentSelectedSVG.setAttribute('height', svgHeightInput.value);
-//         }
-//     });
-
-//     svgOpacityInput.addEventListener('input', () => {
-//         if (currentSelectedSVG) {
-//             currentSelectedSVG.setAttribute('opacity', svgOpacityInput.value);
-//         }
-//     });
-
-//     svgStrokeColorInput.addEventListener('input', () => {
-//         if (currentSelectedSVG) {
-//             currentSelectedSVG.setAttribute('stroke', svgStrokeColorInput.value);
-//         }
-//     });
-
-//     svgStrokeWidthInput.addEventListener('input', () => {
-//         if (currentSelectedSVG) {
-//             currentSelectedSVG.setAttribute('stroke-width', svgStrokeWidthInput.value);
-//         }
-//     });
-
-//     svgScaleInput.addEventListener('input', () => {
-//         if (currentSelectedSVG) {
-//             const scaleValue = svgScaleInput.value;
-//             currentSelectedSVG.setAttribute('transform', `scale(${scaleValue})`);
-//         }
-//     });
-// }
-
-// // Function to update the layer panel
-// function updateLayerPanel() {
-//     layerPanel.innerHTML = ''; // Clear existing layers
-//     const canvas = document.getElementById('canvas');
-//     const svgs = canvas.querySelectorAll('svg'); // Get all SVGs in the canvas
-//     svgs.forEach((svg, index) => {
-//         const layerItem = document.createElement('div');
-//         layerItem.className = 'layer-item p-1 hover:bg-zinc-700 cursor-pointer';
-//         layerItem.textContent = `Layer ${index + 1}`;
-        
-//         // Add click event to select the layer
-//         layerItem.addEventListener('click', () => {
-//             // Logic to select the SVG element
-//             svg.classList.toggle('border border-blue-500'); // Highlight selected layer
-//             svg.classList.toggle('selected'); // Toggle highlight on SVG
-//             updatePropertiesPanel(svg); // Update properties panel with selected SVG
-
-//             // Highlight the corresponding layer item
-//             const isSelected = svg.classList.contains('selected');
-//             layerItem.classList.toggle('bg-blue-500', isSelected); // Change background color if selected
-//         });
-
-//         // Add delete functionality
-//         const deleteButton = document.createElement('button');
-//         deleteButton.textContent = '🗑️';
-//         deleteButton.className = 'ml-2';
-//         deleteButton.addEventListener('click', (e) => {
-//             e.stopPropagation(); // Prevent triggering the layer selection
-//             svg.remove(); // Remove the SVG from the canvas
-//             updateLayerPanel(); // Update the layer panel
-//         });
-
-//         layerItem.appendChild(deleteButton);
-//         layerPanel.appendChild(layerItem);
-
-//         // Make the SVG draggable
-//         makeSVGDraggable(svg);
-//     });
-
-//     makeLayersDraggable(); // Make layers draggable after updating
-// }
-
-// const keyframeList = document.getElementById('keyframe-list');
-// const addKeyframeButton = document.getElementById('add-keyframe');
-
-// // Function to add a new keyframe
-// addKeyframeButton.addEventListener('click', () => {
-//     const keyframeDiv = document.createElement('div');
-//     keyframeDiv.className = 'keyframe';
-
-//     const timeInput = document.createElement('input');
-//     timeInput.type = 'number';
-//     timeInput.placeholder = 'Time';
-    
-//     const valueInput = document.createElement('input');
-//     valueInput.type = 'text';
-//     valueInput.placeholder = 'Value';
-
-//     const deleteButton = document.createElement('button');
-//     deleteButton.textContent = '🗑️';
-//     deleteButton.className = 'ml-2';
-//     deleteButton.addEventListener('click', () => {
-//         keyframeDiv.remove(); // Remove the keyframe
-//     });
-
-//     keyframeDiv.appendChild(timeInput);
-//     keyframeDiv.appendChild(valueInput);
-//     keyframeDiv.appendChild(deleteButton);
-//     keyframeList.appendChild(keyframeDiv);
-// });
-
-// const shapeSelector = document.getElementById('shape-selector');
-// const addShapeButton = document.getElementById('add-shape');
-
-// // Function to create a shape based on the selected type
-// function createShape(type) {
-//     const canvas = document.getElementById('canvas');
-//     let shape;
-
-//     switch (type) {
-//         case 'rectangle':
-//             shape = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-//             shape.setAttribute("width", 100);
-//             shape.setAttribute("height", 100);
-//             shape.setAttribute("fill", "#000000");
-//             shape.setAttribute("x", 100); // Default position
-//             shape.setAttribute("y", 100); // Default position
-//             break;
-//         case 'circle':
-//             shape = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-//             shape.setAttribute("r", 50);
-//             shape.setAttribute("fill", "#000000");
-//             shape.setAttribute("cx", 150); // Default position
-//             shape.setAttribute("cy", 150); // Default position
-//             break;
-//         case 'polygon':
-//             shape = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-//             shape.setAttribute("points", "100,10 40,198 190,78 10,78 160,198");
-//             shape.setAttribute("fill", "#000000");
-//             break;
-//         default:
-//             return; // No valid shape type
-//     }
-
-//     // Append the shape to the canvas
-//     canvas.appendChild(shape);
-//     makeSVGDraggable(shape); // Make the newly created shape draggable
-//     updateLayerPanel(); // Update the layer panel after adding a shape
-// }
-
-// // Add event listener for the "Add Shape" button
-// addShapeButton.addEventListener('click', () => {
-//     const selectedShape = shapeSelector.value;
-//     if (selectedShape) {
-//         createShape(selectedShape);
-//         shapeSelector.value = ""; // Reset the selector after adding
-//     } else {
-//         alert("Please select a shape type."); // Alert if no shape is selected
-//     }
-// });
-
-// const importButton = document.querySelector('button[text="Import SVG"]'); // Adjust selector if necessary
-
-// importButton.addEventListener('click', () => {
-//     const input = document.createElement('input');
-//     input.type = 'file';
-//     input.accept = '.svg';
-//     input.onchange = (event) => {
-//         const file = event.target.files[0];
-//         if (file) {
-//             const reader = new FileReader();
-//             reader.onload = (e) => {
-//                 const svgContent = e.target.result;
-//                 const canvas = document.getElementById('canvas');
-//                 const svgElement = new DOMParser().parseFromString(svgContent, "image/svg+xml").documentElement;
-
-//                 // Set position for the imported SVG
-//                 svgElement.setAttribute('x', 100); // Default x position
-//                 svgElement.setAttribute('y', 100); // Default y position
-
-//                 // Append the SVG to the canvas
-//                 canvas.appendChild(svgElement);
-//                 makeSVGDraggable(svgElement); // Make the imported SVG draggable
-//                 updateLayerPanel(); // Update the layer panel after adding an SVG
-//             };
-//             reader.readAsText(file);
-//         }
-//     };
-//     input.click(); // Trigger the file input dialog
-// });
+const svgNS = 'http://www.w3.org/2000/svg';
+const canvas = document.getElementById('canvas');
+const layersEl = document.getElementById('layers');
+const animTarget = document.getElementById('animTarget');
+const animationList = document.getElementById('animationList');
+
+const state = {
+  tool: 'select',
+  drawing: null,
+  points: [],
+  selected: null,
+  dragOffset: null,
+  id: 1,
+  animations: []
+};
+
+const ui = {
+  fill: document.getElementById('fill'),
+  stroke: document.getElementById('stroke'),
+  strokeWidth: document.getElementById('strokeWidth'),
+  posX: document.getElementById('posX'),
+  posY: document.getElementById('posY')
+};
+
+function pickPoint(evt) {
+  const pt = canvas.createSVGPoint();
+  pt.x = evt.clientX;
+  pt.y = evt.clientY;
+  return pt.matrixTransform(canvas.getScreenCTM().inverse());
+}
+
+function styleShape(el) {
+  el.setAttribute('fill', ui.fill.value);
+  el.setAttribute('stroke', ui.stroke.value);
+  el.setAttribute('stroke-width', ui.strokeWidth.value);
+}
+
+function addLayer(el) {
+  el.dataset.layerId = `layer-${state.id++}`;
+  canvas.appendChild(el);
+  setSelected(el);
+  refreshLayers();
+}
+
+function refreshLayers() {
+  const layers = [...canvas.querySelectorAll('[data-layer-id]')];
+  layersEl.innerHTML = '';
+  animTarget.innerHTML = '';
+  layers.forEach((layer, index) => {
+    const li = document.createElement('li');
+    li.textContent = `${index + 1}. ${layer.tagName} (${layer.dataset.layerId})`;
+    li.onclick = () => setSelected(layer);
+    layersEl.appendChild(li);
+
+    const option = document.createElement('option');
+    option.value = layer.dataset.layerId;
+    option.textContent = layer.dataset.layerId;
+    animTarget.appendChild(option);
+  });
+}
+
+function setSelected(el) {
+  if (state.selected) state.selected.classList.remove('selected');
+  state.selected = el;
+  if (!el) return;
+  el.classList.add('selected');
+  const box = el.getBBox();
+  ui.posX.value = Math.round(box.x);
+  ui.posY.value = Math.round(box.y);
+}
+
+function createShape(tool, point) {
+  let el;
+  if (tool === 'rect') {
+    el = document.createElementNS(svgNS, 'rect');
+    el.setAttribute('x', point.x);
+    el.setAttribute('y', point.y);
+    el.setAttribute('width', 1);
+    el.setAttribute('height', 1);
+  } else if (tool === 'ellipse') {
+    el = document.createElementNS(svgNS, 'ellipse');
+    el.setAttribute('cx', point.x);
+    el.setAttribute('cy', point.y);
+    el.setAttribute('rx', 1);
+    el.setAttribute('ry', 1);
+  } else if (tool === 'line') {
+    el = document.createElementNS(svgNS, 'line');
+    el.setAttribute('x1', point.x);
+    el.setAttribute('y1', point.y);
+    el.setAttribute('x2', point.x);
+    el.setAttribute('y2', point.y);
+    el.setAttribute('fill', 'none');
+  } else if (tool === 'path') {
+    el = document.createElementNS(svgNS, 'path');
+    el.setAttribute('d', `M ${point.x} ${point.y}`);
+    el.setAttribute('fill', 'none');
+    state.points = [`M ${point.x} ${point.y}`];
+  }
+  styleShape(el);
+  return el;
+}
+
+canvas.addEventListener('mousedown', (evt) => {
+  const point = pickPoint(evt);
+  const target = evt.target.closest('[data-layer-id]');
+
+  if (state.tool === 'select') {
+    if (target) {
+      setSelected(target);
+      const b = target.getBBox();
+      state.dragOffset = { dx: point.x - b.x, dy: point.y - b.y };
+    } else {
+      setSelected(null);
+    }
+    return;
+  }
+
+  state.drawing = createShape(state.tool, point);
+  addLayer(state.drawing);
+});
+
+canvas.addEventListener('mousemove', (evt) => {
+  const point = pickPoint(evt);
+
+  if (state.tool === 'select' && state.selected && state.dragOffset && evt.buttons) {
+    const b = state.selected.getBBox();
+    const nx = point.x - state.dragOffset.dx;
+    const ny = point.y - state.dragOffset.dy;
+    const dx = nx - b.x;
+    const dy = ny - b.y;
+    state.selected.setAttribute('transform', `translate(${dx}, ${dy})`);
+    return;
+  }
+
+  if (!state.drawing) return;
+
+  if (state.tool === 'rect') {
+    state.drawing.setAttribute('width', Math.abs(point.x - Number(state.drawing.getAttribute('x'))));
+    state.drawing.setAttribute('height', Math.abs(point.y - Number(state.drawing.getAttribute('y'))));
+  } else if (state.tool === 'ellipse') {
+    state.drawing.setAttribute('rx', Math.abs(point.x - Number(state.drawing.getAttribute('cx'))));
+    state.drawing.setAttribute('ry', Math.abs(point.y - Number(state.drawing.getAttribute('cy'))));
+  } else if (state.tool === 'line') {
+    state.drawing.setAttribute('x2', point.x);
+    state.drawing.setAttribute('y2', point.y);
+  } else if (state.tool === 'path') {
+    state.points.push(`L ${point.x} ${point.y}`);
+    state.drawing.setAttribute('d', state.points.join(' '));
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  state.drawing = null;
+  state.dragOffset = null;
+  state.points = [];
+});
+
+ui.posX.addEventListener('change', () => {
+  if (!state.selected) return;
+  const box = state.selected.getBBox();
+  const dx = Number(ui.posX.value) - box.x;
+  const prev = state.selected.getAttribute('transform') || 'translate(0,0)';
+  const [, tx = 0, ty = 0] = /translate\(([-\d.]+)[ ,]([-\d.]+)\)/.exec(prev) || [];
+  state.selected.setAttribute('transform', `translate(${Number(tx) + dx}, ${Number(ty)})`);
+});
+
+ui.posY.addEventListener('change', () => {
+  if (!state.selected) return;
+  const box = state.selected.getBBox();
+  const dy = Number(ui.posY.value) - box.y;
+  const prev = state.selected.getAttribute('transform') || 'translate(0,0)';
+  const [, tx = 0, ty = 0] = /translate\(([-\d.]+)[ ,]([-\d.]+)\)/.exec(prev) || [];
+  state.selected.setAttribute('transform', `translate(${Number(tx)}, ${Number(ty) + dy})`);
+});
+
+document.querySelectorAll('[data-tool]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-tool]').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.tool = btn.dataset.tool;
+    canvas.style.cursor = state.tool === 'select' ? 'default' : 'crosshair';
+  });
+});
+
+document.querySelectorAll('.tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab, .tab-panel').forEach((n) => n.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+document.getElementById('addAnimation').addEventListener('click', () => {
+  const targetId = animTarget.value;
+  if (!targetId) return;
+  const item = {
+    id: `anim-${Date.now()}`,
+    targetId,
+    property: document.getElementById('animProperty').value,
+    from: document.getElementById('animFrom').value,
+    to: document.getElementById('animTo').value,
+    duration: document.getElementById('animDuration').value,
+    loop: document.getElementById('animLoop').value
+  };
+  state.animations.push(item);
+  renderAnimations();
+});
+
+function renderAnimations() {
+  animationList.innerHTML = '';
+  state.animations.forEach((anim) => {
+    const li = document.createElement('li');
+    li.textContent = `${anim.targetId}: ${anim.property} ${anim.from}→${anim.to} (${anim.duration}s)`;
+    animationList.appendChild(li);
+  });
+}
+
+function applyAnimations() {
+  canvas.querySelectorAll('animate, animateTransform').forEach((n) => n.remove());
+  state.animations.forEach((anim) => {
+    const target = canvas.querySelector(`[data-layer-id="${anim.targetId}"]`);
+    if (!target) return;
+
+    let node;
+    if (anim.property === 'rotate') {
+      node = document.createElementNS(svgNS, 'animateTransform');
+      node.setAttribute('attributeName', 'transform');
+      node.setAttribute('type', 'rotate');
+      const box = target.getBBox();
+      node.setAttribute('from', `${anim.from} ${box.x + box.width / 2} ${box.y + box.height / 2}`);
+      node.setAttribute('to', `${anim.to} ${box.x + box.width / 2} ${box.y + box.height / 2}`);
+    } else {
+      node = document.createElementNS(svgNS, 'animate');
+      node.setAttribute('attributeName', anim.property === 'x' ? 'x' : anim.property === 'y' ? 'y' : 'opacity');
+      node.setAttribute('from', anim.from);
+      node.setAttribute('to', anim.to);
+    }
+    node.setAttribute('dur', `${anim.duration}s`);
+    node.setAttribute('repeatCount', anim.loop);
+    node.setAttribute('fill', 'freeze');
+    target.appendChild(node);
+  });
+}
+
+document.getElementById('playAnimations').addEventListener('click', () => {
+  applyAnimations();
+  canvas.querySelectorAll('animate, animateTransform').forEach((n) => n.beginElement?.());
+});
+
+document.getElementById('clearAnimations').addEventListener('click', () => {
+  state.animations = [];
+  renderAnimations();
+  canvas.querySelectorAll('animate, animateTransform').forEach((n) => n.remove());
+});
+
+document.getElementById('extrudeSelected').addEventListener('click', () => {
+  if (!state.selected) return;
+  const depth = Number(document.getElementById('extrudeDepth').value);
+  const ox = Number(document.getElementById('extrudeX').value);
+  const oy = Number(document.getElementById('extrudeY').value);
+  for (let i = depth; i > 0; i -= 1) {
+    const clone = state.selected.cloneNode(true);
+    clone.classList.remove('selected');
+    clone.setAttribute('fill', '#2a2a2a');
+    clone.setAttribute('stroke', '#414141');
+    clone.setAttribute('opacity', String(0.12 + i / (depth * 8)));
+    clone.setAttribute('transform', `translate(${ox * i * 0.5}, ${oy * i * 0.5})`);
+    clone.dataset.layerId = `layer-${state.id++}`;
+    canvas.insertBefore(clone, state.selected);
+  }
+  refreshLayers();
+});
+
+document.getElementById('exportSvg').addEventListener('click', () => {
+  applyAnimations();
+  const data = new XMLSerializer().serializeToString(canvas);
+  document.getElementById('exportOutput').value = data;
+  const blob = new Blob([data], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'anemate-export.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+refreshLayers();

@@ -4,94 +4,31 @@
   --line: #2b2b2b;
   --ink: #dddddd;
   --muted: #8d8d8d;
-  --accent: #6f6f6f;
+  --accent: #7c7cff;
 }
 
 * { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: Inter, system-ui, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--ink);
-}
+body { margin: 0; font-family: Inter, system-ui, Arial, sans-serif; background: var(--bg); color: var(--ink); }
 
-.app {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  min-height: 100vh;
-}
-
-.sidebar {
-  border-right: 1px solid var(--line);
-  background: var(--panel);
-  padding: 16px;
-  max-height: 100vh;
-  overflow-y: auto;
-}
-
-h1 { margin: 0; font-size: 1.1rem; letter-spacing: 0.03em; }
+.app { display: grid; grid-template-columns: 350px 1fr; min-height: 100vh; }
+.sidebar { border-right: 1px solid var(--line); background: var(--panel); padding: 16px; max-height: 100vh; overflow-y: auto; }
+h1 { margin: 0; font-size: 1.1rem; letter-spacing: 0.04em; }
 .subtitle { margin: 2px 0 14px; color: var(--muted); font-size: 0.8rem; }
 
-.tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-button, select, input {
-  width: 100%;
-  background: #212121;
-  border: 1px solid var(--line);
-  color: var(--ink);
-  border-radius: 8px;
-  padding: 8px;
-}
-
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
+button, select, input { width: 100%; background: #212121; border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 8px; }
 button:hover { border-color: var(--accent); cursor: pointer; }
-
-.tab.is-active,
-.tool.is-active { background: #303030; }
+.tab.is-active, .tool.is-active { background: #303041; border-color: #5656b9; }
 
 .panel { display: none; }
 .panel.is-active { display: block; }
+label { display: block; margin: 10px 0 6px; color: var(--muted); font-size: 0.8rem; }
+.tool-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.inline-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.grid-row { display: grid; grid-template-columns: 1fr 80px; gap: 8px; }
+.check { display: flex; align-items: center; gap: 8px; color: var(--ink); margin: 0; }
 
-label {
-  display: block;
-  margin: 10px 0 6px;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.tool-row {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-}
-
-.inline-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.grid-row {
-  display: grid;
-  grid-template-columns: 1fr 80px;
-  gap: 8px;
-}
-
-.check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--ink);
-  margin: 0;
-}
-
-#layersList,
-#animList {
+#layersList, #animList, .feature-list {
   list-style: none;
   padding-left: 0;
   margin: 10px 0 0;
@@ -101,8 +38,7 @@ label {
   overflow: auto;
 }
 
-#layersList li,
-#animList li {
+#layersList li, #animList li, .feature-list li {
   background: #1f1f1f;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -110,32 +46,20 @@ label {
   font-size: 0.75rem;
 }
 
-#layersList li.is-active {
-  border-color: #a0a0a0;
-  background: #2a2a2a;
-}
-
+.feature-list { max-height: 280px; counter-reset: item; }
+.feature-list li { list-style: decimal inside; }
+#layersList li.is-active { border-color: #a0a0a0; background: #2a2a2a; }
 .hint { color: var(--muted); font-size: 0.75rem; }
 
 .stage-wrap { display: grid; grid-template-rows: auto 1fr; }
-.toolbar {
-  border-bottom: 1px solid var(--line);
-  padding: 10px 12px;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
+.toolbar { border-bottom: 1px solid var(--line); padding: 10px 12px; font-size: 0.85rem; color: var(--muted); }
 
 #stage {
   width: 100%;
   height: calc(100vh - 42px);
   display: block;
-  background:
-    linear-gradient(#202020 1px, transparent 1px),
-    linear-gradient(90deg, #202020 1px, transparent 1px),
-    #111;
+  background: linear-gradient(#202020 1px, transparent 1px), linear-gradient(90deg, #202020 1px, transparent 1px), #111;
   background-size: 24px 24px;
 }
 
-.selected {
-  outline: 1px dashed #bdbdbd;
-}
+.selected { outline: 1px dashed #bdbdbd; }
